@@ -1,11 +1,11 @@
-package bot
+package main
 
 import (
-	"flag"
 	"log"
+	"os"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/sparkeexd/hoyoapi/client"
+	"github.com/joho/godotenv"
 	"github.com/sparkeexd/mimo/commands"
 )
 
@@ -14,20 +14,20 @@ var (
 	Session *discordgo.Session
 
 	// Discord bot parameters.
-	BotToken = flag.String("token", "", "Bot access token.")
-
-	// Hoyo API clients.
-	GenshinClient  *client.GenshinClient
-	StarRailClient *client.StarRailClient
-	ZenlessClient  *client.ZenlessClient
+	BotToken string
 )
 
 // Create discord bot session.
 func CreateSession() {
-	flag.Parse()
-
 	var err error
-	Session, err = discordgo.New("Bot " + *BotToken)
+
+	err = godotenv.Load()
+	if err != nil {
+		log.Fatalf("Error loading configs: %v", err)
+	}
+
+	BotToken = os.Getenv("BOT_TOKEN")
+	Session, err = discordgo.New("Bot " + BotToken)
 	if err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
@@ -40,18 +40,6 @@ func CreateSession() {
 	if err != nil {
 		log.Fatalf("Cannot open the session: %v", err)
 	}
-}
-
-// Initializing Hoyo API clients.
-func InitializeClients() {
-	language := "en-us"
-	clientOptions := client.NewClientOptions().
-		AddLanguage(language).
-		Build()
-
-	GenshinClient = client.NewGenshinClient(clientOptions)
-	StarRailClient = client.NewStarRailClient(clientOptions)
-	ZenlessClient = client.NewZenlessClient(clientOptions)
 }
 
 // Register the slash command.

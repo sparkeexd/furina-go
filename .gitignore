@@ -23,3 +23,6 @@ go.work
 # Environment variables for development purposes (not required for actual use)
 .env
 .bashrc
+
+# Go builds
+tmp

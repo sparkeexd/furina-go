@@ -5,21 +5,17 @@ import (
 	"os"
 	"os/signal"
 
-	"github.com/sparkeexd/mimo/bot"
 	"github.com/sparkeexd/mimo/commands/daily"
 	"github.com/sparkeexd/mimo/commands/hello"
 )
 
 func main() {
 	log.Println("Creating discord bot session...")
-	bot.CreateSession()
-
-	log.Println("Initializing Hoyo API clients...")
-	bot.InitializeClients()
+	CreateSession()
 
 	log.Println("Adding commands...")
-	bot.AddCommands(hello.Commands)
-	bot.AddCommands(daily.Commands)
+	AddCommands(hello.Commands)
+	AddCommands(daily.Commands)
 
 	// Event listener to stop the bot.
 	log.Println("Bot is now running! Press Ctrl+C to exit.")
@@ -28,5 +24,5 @@ func main() {
 	<-stop
 
 	log.Println("Closing discord bot session...")
-	bot.CloseSession()
+	CloseSession()
 }
