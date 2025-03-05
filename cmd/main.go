@@ -14,8 +14,10 @@ func main() {
 	CreateSession()
 
 	log.Println("Adding commands...")
-	AddCommands(hello.Commands)
-	AddCommands(daily.Commands)
+	AddCommands(
+		hello.Commands,
+		daily.Commands,
+	)
 
 	// Event listener to stop the bot.
 	log.Println("Bot is now running! Press Ctrl+C to exit.")

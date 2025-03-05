@@ -1,4 +1,4 @@
-package commands
+package models
 
 import "github.com/bwmarrin/discordgo"
 
@@ -6,4 +6,8 @@ import "github.com/bwmarrin/discordgo"
 type Command struct {
 	Command *discordgo.ApplicationCommand
 	Handler func(session *discordgo.Session, interaction *discordgo.InteractionCreate)
+}
+
+func NewCommand(command *discordgo.ApplicationCommand, handler func(session *discordgo.Session, interaction *discordgo.InteractionCreate)) Command {
+	return Command{command, handler}
 }

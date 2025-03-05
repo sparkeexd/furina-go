@@ -6,15 +6,15 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/joho/godotenv"
-	"github.com/sparkeexd/mimo/commands"
+	"github.com/sparkeexd/mimo/internal/models"
 )
 
 var (
-	// Discord bot Session.
-	Session *discordgo.Session
+	// Discord bot session.
+	session *discordgo.Session
 
 	// Discord bot parameters.
-	BotToken string
+	botToken string
 )
 
 // Create discord bot session.
@@ -26,40 +26,46 @@ func CreateSession() {
 		log.Fatalf("Error loading configs: %v", err)
 	}
 
-	BotToken = os.Getenv("BOT_TOKEN")
-	Session, err = discordgo.New("Bot " + BotToken)
+	botToken = os.Getenv("BOT_TOKEN")
+	session, err = discordgo.New("Bot " + botToken)
 	if err != nil {
 		log.Fatalf("Invalid bot parameters: %v", err)
 	}
 
-	Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
+	session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
 		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
 	})
 
-	err = Session.Open()
+	err = session.Open()
 	if err != nil {
 		log.Fatalf("Cannot open the session: %v", err)
 	}
 }
 
-// Register the slash command.
-// Add a handler executes the registered handler if its corresponding command exists.
-func AddCommands(commands map[string]commands.Command) {
-	Session.AddHandler(func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
-		if command, exists := commands[interaction.ApplicationCommandData().Name]; exists {
-			command.Handler(session, interaction)
-		}
-	})
+// Register the slash commands.
+// Requires reloading Discord client to view the changes.
+func AddCommands(commandGroups ...map[string]models.Command) {
+	var commandsToRegister []*discordgo.ApplicationCommand
 
-	for _, v := range commands {
-		_, err := Session.ApplicationCommandCreate(Session.State.User.ID, "", v.Command)
-		if err != nil {
-			log.Panicf("Cannot create '%v' command: %v", v.Command.Name, err)
+	for _, commands := range commandGroups {
+		session.AddHandler(
+			func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
+				if command, exists := commands[interaction.ApplicationCommandData().Name]; exists {
+					command.Handler(session, interaction)
+				}
+			},
+		)
+
+		for _, v := range commands {
+			commandsToRegister = append(commandsToRegister, v.Command)
 		}
 	}
+
+	// Overwrite all existing commands, which allow clearing out old commands.
+	session.ApplicationCommandBulkOverwrite(session.State.User.ID, "", commandsToRegister)
 }
 
 // Close the session.
 func CloseSession() {
-	Session.Close()
+	session.Close()
 }
