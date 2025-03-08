@@ -18,4 +18,4 @@ CMD ["go", "run", "./..."]
 
 FROM base AS prod
 RUN CGO_ENABLED=0 GOOS=linux go build -v -o /usr/local/bin/mimo ./cmd
-CMD ["sh", "c", "traefik & /usr/local/bin/mimo"]
+CMD ["/usr/local/bin/mimo"]
