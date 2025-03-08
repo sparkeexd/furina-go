@@ -4,6 +4,8 @@ services:
       context: .
       target: dev
       dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
     restart: unless-stopped
     env_file: .env.development
     develop:
