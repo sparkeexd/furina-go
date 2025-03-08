@@ -1,0 +1,16 @@
+services:
+  bot:
+    build:
+      context: .
+      target: dev
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    env_file: .env
+    develop:
+      watch:
+        - action: sync+restart
+          path: ./
+          target: /usr/src/mimo
+        - action: rebuild
+          path: go.mod
+          target: /usr/src/mimo/go.mod

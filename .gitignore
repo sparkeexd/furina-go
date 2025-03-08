@@ -25,4 +25,4 @@ go.work
 .bashrc
 
 # Go builds
-tmp
+bin

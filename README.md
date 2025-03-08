@@ -1,2 +1,2 @@
 # mimo
-Discord bot integration for HoYoLab.
+Personal discord bot integration for commonly used HoYoLab functions.
