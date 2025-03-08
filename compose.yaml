@@ -5,7 +5,7 @@ services:
       target: dev
       dockerfile: Dockerfile
     restart: unless-stopped
-    env_file: .env
+    env_file: .env.development
     develop:
       watch:
         - action: sync+restart

@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/joho/godotenv"
 	"github.com/sparkeexd/mimo/internal/models"
 )
 
@@ -20,11 +19,6 @@ var (
 // Create discord bot session.
 func CreateSession() {
 	var err error
-
-	err = godotenv.Load()
-	if err != nil {
-		log.Fatalf("Error loading configs: %v", err)
-	}
 
 	botToken = os.Getenv("BOT_TOKEN")
 	session, err = discordgo.New("Bot " + botToken)
