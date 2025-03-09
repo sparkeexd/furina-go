@@ -7,10 +7,6 @@ RUN go mod download
 
 COPY . .
 
-FROM alpine:latest
-WORKDIR /usr/src/mimo
-COPY --from=builder /usr/src/mimo /usr/src/mimo
-
 EXPOSE 8080
 
 FROM base AS dev

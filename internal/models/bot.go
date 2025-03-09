@@ -1,4 +1,4 @@
-package main
+package models
 
 import (
 	"log"
@@ -6,21 +6,18 @@ import (
 	"os/signal"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/sparkeexd/mimo/commands/daily"
-	"github.com/sparkeexd/mimo/commands/hello"
-	"github.com/sparkeexd/mimo/internal/models"
 )
 
 // Discord bot.
 type Bot struct {
 	Token    string
 	Session  *discordgo.Session
-	Commands []map[string]models.Command
+	Commands []map[string]Command
 	Status   string
 }
 
 // Create a new Discord bot.
-func NewBot() *Bot {
+func NewBot(commands ...map[string]Command) *Bot {
 	token := os.Getenv("BOT_TOKEN")
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -28,13 +25,10 @@ func NewBot() *Bot {
 	}
 
 	bot := &Bot{
-		Token:   token,
-		Session: session,
-		Commands: []map[string]models.Command{
-			hello.Commands,
-			daily.Commands,
-		},
-		Status: "Active",
+		Token:    token,
+		Session:  session,
+		Commands: commands,
+		Status:   "ACTIVE",
 	}
 
 	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
@@ -57,7 +51,7 @@ func (bot *Bot) Start() {
 	}
 
 	log.Println("Adding commands...")
-	bot.AddCommands(bot.Commands...)
+	bot.AddCommands()
 
 	// Event listener to stop the bot.
 	log.Println("Bot is now running! Press Ctrl+C to exit.")
@@ -66,16 +60,16 @@ func (bot *Bot) Start() {
 	<-stop
 
 	log.Println("Closing discord bot session...")
-	bot.Status = "Inactive"
+	bot.Status = "INACTIVE"
 	bot.Session.Close()
 }
 
 // Register the slash commands.
 // Requires reloading Discord client to view the changes.
-func (bot *Bot) AddCommands(commandGroups ...map[string]models.Command) {
+func (bot *Bot) AddCommands() {
 	var commandsToRegister []*discordgo.ApplicationCommand
 
-	for _, commands := range commandGroups {
+	for _, commands := range bot.Commands {
 		bot.Session.AddHandler(
 			func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
 				if command, exists := commands[interaction.ApplicationCommandData().Name]; exists {

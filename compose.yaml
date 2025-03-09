@@ -4,15 +4,15 @@ services:
       context: .
       target: dev
       dockerfile: Dockerfile
-    ports:
-      - "8080:8080"
     restart: unless-stopped
     env_file: .env.development
+    ports:
+      - "8080:8080"
     develop:
       watch:
-        - action: sync+restart
-          path: ./
-          target: /usr/src/mimo
         - action: rebuild
           path: go.mod
           target: /usr/src/mimo/go.mod
+        - action: sync+restart
+          path: ./
+          target: /usr/src/mimo

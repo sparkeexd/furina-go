@@ -1,8 +1,11 @@
-package main
+package models
 
 import (
+	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"golang.org/x/time/rate"
 )
@@ -15,30 +18,43 @@ type Server struct {
 	Bot *Bot
 }
 
+type HealthCheckResponse struct {
+	Status string `json:"status"`
+}
+
 // Create a new healthcheck server.
 func NewServer(bot *Bot) *Server {
 	return &Server{Bot: bot}
 }
 
+// Create a new healthcheck response.
+func NewHealthCheckResponse(status string) *HealthCheckResponse {
+	return &HealthCheckResponse{Status: status}
+}
+
 // Start Discord bot healthcheck server.
 func (server *Server) StartServer() {
-	http.HandleFunc("/health-check", server.rateLimit(server.healthCheckHandler))
+	http.HandleFunc("/status", server.rateLimit(server.healthCheckHandler))
 
-	err := http.ListenAndServe(":8080", nil)
+	port := os.Getenv("PORT")
+	err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
 		log.Fatalf("Error starting server: %v", err)
 	}
 }
 
-// Health check handler.
+// Healthcheck handler.
 func (server *Server) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	if server.Bot.Status == "Active" {
+	response := NewHealthCheckResponse(server.Bot.Status)
+
+	w.Header().Set("Content-Type", "application/json")
+	if server.Bot.Status == "ACTIVE" {
 		w.WriteHeader(http.StatusOK)
-		w.Write([]byte(`{"status": "Active"}`))
 	} else {
 		w.WriteHeader(http.StatusServiceUnavailable)
-		w.Write([]byte(`{"status": "Inactive"}`))
 	}
+
+	json.NewEncoder(w).Encode(response)
 }
 
 // Rate limiter middleware.
