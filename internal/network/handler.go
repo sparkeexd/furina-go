@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/sparkeexd/mimo/internal/errors"
 	"github.com/sparkeexd/mimo/internal/utils"
 )
 
@@ -66,10 +65,7 @@ func (handler Handler) Send(request Request, res any) error {
 	}
 
 	if response.StatusCode != http.StatusOK {
-		return errors.NewError(
-			response.StatusCode,
-			fmt.Sprintf("URL: %s\nError: %+v", request.endpoint, string(body)),
-		)
+		return fmt.Errorf("response error %s %s", request.endpoint, string(body))
 	}
 
 	utils.UnmarshalJSON(body, &res)

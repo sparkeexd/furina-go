@@ -3,7 +3,6 @@ package models
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 
@@ -33,14 +32,16 @@ func NewHealthCheckResponse(status string) *HealthCheckResponse {
 }
 
 // Start Discord bot healthcheck server.
-func (server *Server) StartServer() {
+func (server *Server) StartServer() error {
 	http.HandleFunc("/status", server.rateLimit(server.healthCheckHandler))
 
 	port := os.Getenv("PORT")
 	err := http.ListenAndServe(fmt.Sprintf(":%v", port), nil)
 	if err != nil {
-		log.Fatalf("Error starting server: %v", err)
+		return err
 	}
+
+	return nil
 }
 
 // Healthcheck handler.

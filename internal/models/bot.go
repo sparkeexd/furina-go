@@ -41,8 +41,13 @@ func NewBot(commands ...map[string]Command) *Bot {
 // Start Discord bot.
 func (bot *Bot) Start() {
 	// Start healthcheck server in a separate goroutine.
-	server := NewServer(bot)
-	go server.StartServer()
+	go func() {
+		server := NewServer(bot)
+		err := server.StartServer()
+		if err != nil {
+			log.Fatalf("Error starting server: %v", err)
+		}
+	}()
 
 	log.Println("Creating discord bot session...")
 	err := bot.Session.Open()

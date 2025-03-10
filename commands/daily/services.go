@@ -17,8 +17,8 @@ type DailyReward struct {
 }
 
 // Constructor.
-func NewDailyReward(baseUrl string, eventId string, actId string, signGame string) DailyReward {
-	return DailyReward{baseUrl, eventId, actId, signGame}
+func NewDailyReward(baseURL string, eventID string, actID string, signGame string) DailyReward {
+	return DailyReward{baseURL, eventID, actID, signGame}
 }
 
 // Claim daily reward.
