@@ -31,7 +31,7 @@ func helloCommandHandler(session *discordgo.Session, interaction *discordgo.Inte
 	session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("Hello there, %v!", member.Mention()),
+			Content: fmt.Sprintf("I knew you'd miss me, %v.", member.Mention()),
 		},
 	})
 }
