@@ -52,4 +52,4 @@ jobs:
     
     - name: Purge Artifact Registry Images
       run: |-
-        gcloud artifact docker images delete "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA"
+        gcloud artifacts docker images delete "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA"
