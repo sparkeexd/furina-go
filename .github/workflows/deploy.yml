@@ -47,11 +47,10 @@ jobs:
 
     - name: Prune Docker Images from VM Instance on Startup
       run: |-
-        gcloud compute instances add-metadata "${{ secrets.GCE_INSTANCE }}" \
-          --zone "${{ secrets.GCE_INSTANCE_ZONE }}" \
-          --metadata=startup-script="
-            #!/bin/bash
-            docker image prune -af"
+        gcloud compute config-ssh --quiet
+        gcloud compute ssh ${{ secrets.GCE_INSTANCE }} \
+          --zone ${{ secrets.GCE_INSTANCE_ZONE }} \
+          --command "docker image prune -af"
 
     - name: Update Instance Container
       run: |-
