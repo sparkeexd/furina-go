@@ -29,8 +29,14 @@ jobs:
 
     - name: Purge Artifact Registry Package
       run: |-
-        if gcloud artifacts packages list --location us --repository gcr.io --format="value(name)" | grep -q ${{ secrets.GAR_PACKAGE }}; then
-          gcloud artifacts packages delete ${{ secrets.GAR_PACKAGE }} --location us --repository gcr.io --quiet
+        if gcloud artifacts packages list \
+          --location us \
+          --repository gcr.io \
+          --format="value(name)" | grep -q ${{ secrets.GAR_PACKAGE }}; then
+          gcloud artifacts packages delete ${{ secrets.GAR_PACKAGE }} \
+            --location us \
+            --repository gcr.io \
+            --quiet
         fi
 
     - name: Build Docker Image
@@ -39,11 +45,12 @@ jobs:
     - name: Push Docker Image to Artifact Registry
       run: docker push "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA"
 
-    - name: Prune Docker Images from VM Instance
+    - name: Prune Docker Images from VM Instance on Startup
       run: |-
         gcloud compute instances add-metadata "${{ secrets.GCE_INSTANCE }}" \
           --zone "${{ secrets.GCE_INSTANCE_ZONE }}" \
-          --metadata=startup-script="#!/bin/bash
+          --metadata=startup-script="
+            #!/bin/bash
             docker image prune -af"
 
     - name: Update Instance Container
@@ -53,4 +60,4 @@ jobs:
           --container-image "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA" \
           --container-env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
           --container-env SUPABASE_PROJECT_URL=${{ secrets.SUPABASE_PROJECT_URL }} \
-          --container-env SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }} \
+          --container-env SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
