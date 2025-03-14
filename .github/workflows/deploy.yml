@@ -29,7 +29,7 @@ jobs:
 
     - name: Purge Artifact Registry Package
       run: |-
-        if gcloud artifacts packages list --location us --repository gcr.io --filter="value(name)" | grep -q ${{ secrets.GAR_PACKAGE }}; then
+        if gcloud artifacts packages list --location us --repository gcr.io --format="value(name)" | grep -q ${{ secrets.GAR_PACKAGE }}; then
           gcloud artifacts packages delete ${{ secrets.GAR_PACKAGE }} --location us --repository gcr.io --quiet
         fi
 
