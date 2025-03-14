@@ -5,6 +5,7 @@ on:
     branches:
       - master
       - cloud_deploy
+      - test_deploy
   workflow_dispatch:
 
 jobs:
