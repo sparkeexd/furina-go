@@ -46,6 +46,15 @@ jobs:
         gcloud compute instances update-container "${{ secrets.GCE_INSTANCE }}" \
           --zone "${{ secrets.GCE_INSTANCE_ZONE }}" \
           --container-image "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA" \
-          --container-env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
-          --container-env SUPABASE_PROJECT_URL=${{ secrets.SUPABASE_PROJECT_URL }} \
-          --container-env SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          --container-env \
+              BOT_TOKEN=${{ secrets.BOT_TOKEN }}, \
+              SUPABASE_PROJECT_URL=${{ secrets.SUPABASE_PROJECT_URL }}, \
+              SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }} \
+          --verbosity=debug
+  
+    - name: Purge Artifact Registry Package
+      run: |-
+        gcloud artifacts packages delete ${{ secrets.GAR_PACKAGE }} \
+          --location us \
+          --repository gcr.io \
+          --quiet
