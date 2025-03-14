@@ -26,13 +26,6 @@ jobs:
     
     - name: Configure Docker
       run: gcloud --quiet auth configure-docker
-
-    - name: Purge Artifact Registry Package
-      run: |-
-        gcloud artifacts packages delete ${{ secrets.GAR_PACKAGE }} \
-          --location us \
-          --repository gcr.io \
-          --quiet
     
     - name: Build Docker Image
       run: DOCKER_BUILDKIT=1 docker build --target prod -t "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA" .
@@ -44,8 +37,7 @@ jobs:
       run: |-
         gcloud compute instances add-metadata "${{ secrets.GCE_INSTANCE }}" \
           --zone "${{ secrets.GCE_INSTANCE_ZONE }}" \
-          --metadata=startup-script="
-            #!/bin/bash
+          --metadata=startup-script="#!/bin/bash
             docker image prune -af"
 
     - name: Update Instance Container
@@ -55,4 +47,25 @@ jobs:
           --container-image "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA" \
           --container-env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
           --container-env SUPABASE_PROJECT_URL=${{ secrets.SUPABASE_PROJECT_URL }} \
-          --container-env SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          --container-env SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }} \
+    
+    - name: Wait for VM to Pull the Image
+      run: |-
+        while true; do
+          CONTAINER_STATUS=$(gcloud compute instances get-serial-port-output "${{ secrets.GCE_INSTANCE }}" \
+            --zone "${{ secrets.GCE_INSTANCE_ZONE }}" \
+            --port=1 | grep "Container image pull completed")
+          if [[ -n "$CONTAINER_STATUS" ]]; then
+            echo "Container image has been pulled successfully."
+            break
+          fi
+          echo "Waiting for the VM to pull the image..."
+          sleep 10
+        done
+
+    - name: Purge Artifact Registry Package
+      run: |-
+        gcloud artifacts packages delete ${{ secrets.GAR_PACKAGE }} \
+          --location us \
+          --repository gcr.io \
+          --quiet
