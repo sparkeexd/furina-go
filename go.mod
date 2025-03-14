@@ -7,7 +7,6 @@ toolchain go1.24.1
 require (
 	github.com/bwmarrin/discordgo v0.28.1
 	github.com/nedpals/supabase-go v0.5.0
-	golang.org/x/time v0.11.0
 )
 
 require (
