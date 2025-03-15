@@ -2,7 +2,7 @@ services:
   bot:
     build:
       context: .
-      target: dev
+      target: development
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: .env.development

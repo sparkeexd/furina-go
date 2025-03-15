@@ -9,9 +9,9 @@ COPY . .
 
 EXPOSE 8080
 
-FROM base AS dev
+FROM base AS development
 CMD ["go", "run", "./..."]
 
-FROM base AS prod
+FROM base AS production
 RUN CGO_ENABLED=0 GOOS=linux go build -v -o /usr/local/bin/mimo ./cmd
 CMD ["/usr/local/bin/mimo"]

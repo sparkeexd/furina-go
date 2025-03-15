@@ -6,6 +6,7 @@ import (
 	"os/signal"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/sparkeexd/mimo/internal/middleware"
 )
 
 // Discord bot.
@@ -31,9 +32,7 @@ func NewBot(commands ...map[string]Command) *Bot {
 		Status:   "ACTIVE",
 	}
 
-	bot.Session.AddHandler(func(s *discordgo.Session, r *discordgo.Ready) {
-		log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
-	})
+	bot.Session.AddHandler(middleware.Ready)
 
 	return bot
 }
@@ -61,6 +60,7 @@ func (bot *Bot) Start() {
 }
 
 // Register the slash commands.
+// Middleware is attached to each command to block interactions outside of the guild.
 // Requires reloading Discord client to view the changes.
 func (bot *Bot) AddCommands() {
 	var commandsToRegister []*discordgo.ApplicationCommand
@@ -69,7 +69,7 @@ func (bot *Bot) AddCommands() {
 		bot.Session.AddHandler(
 			func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
 				if command, exists := commands[interaction.ApplicationCommandData().Name]; exists {
-					command.Handler(session, interaction)
+					middleware.InteractionCreate(command.Handler)(session, interaction)
 				}
 			},
 		)

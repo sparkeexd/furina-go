@@ -26,12 +26,10 @@ var helloCommand = discordgo.ApplicationCommand{
 // Reply with a simple hello greeting to the user.
 // Calls the user by their display name or server nickname if present, otherwise defaults to their username.
 func helloCommandHandler(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
-	member := interaction.Member
-
 	session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("I knew you'd miss me, %v.", member.Mention()),
+			Content: fmt.Sprintf("Hello there, %v!", interaction.Member.Mention()),
 		},
 	})
 }

@@ -39,7 +39,7 @@ jobs:
         fi
 
     - name: Build Docker Image
-      run: DOCKER_BUILDKIT=1 docker build --target prod -t "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA" .
+      run: DOCKER_BUILDKIT=1 docker build --target production -t "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA" .
 
     - name: Push Docker Image to Artifact Registry
       run: docker push "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA"
@@ -57,6 +57,7 @@ jobs:
         gcloud compute instances update-container "${{ secrets.GCE_INSTANCE }}" \
           --zone "${{ secrets.GCE_INSTANCE_ZONE }}" \
           --container-image "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA" \
+          --container-env ENV=production \
           --container-env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
           --container-env SUPABASE_PROJECT_URL=${{ secrets.SUPABASE_PROJECT_URL }} \
           --container-env SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
