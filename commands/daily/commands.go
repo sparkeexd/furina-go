@@ -2,10 +2,12 @@ package daily
 
 import (
 	"fmt"
+	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/sparkeexd/mimo/internal/models"
 	"github.com/sparkeexd/mimo/internal/network"
+	"github.com/sparkeexd/mimo/internal/utils"
 )
 
 var (
@@ -26,25 +28,38 @@ var dailyCommand = discordgo.ApplicationCommand{
 
 // Perform Genshin Impact daily check-in on HoYoLab.
 func dailyCommandHandler(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
-	client := models.DatabaseClient()
-	user, err := client.GetUser(interaction.Member.User.ID)
+	session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
+		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
+	})
 
+	discordUser := utils.GetDiscordUser(interaction)
+	userID, err := strconv.Atoi(discordUser.ID)
 	if err != nil {
-		session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
-			Type: discordgo.InteractionResponseChannelMessageWithSource,
-			Data: &discordgo.InteractionResponseData{
-				Content: "You are not registered yet, please register first.",
-			},
-		})
+		content := "Failed to parse Discord user ID."
+		utils.InteractionResponseEditError(session, interaction.Interaction, err, content)
 		return
 	}
 
-	cookie := network.NewCookie(user.LtokenV2, user.LtmidV2, user.LtuidV2)
+	client, err := models.DatabaseClient()
+	if err != nil {
+		content := "Unable to connect to database."
+		utils.InteractionResponseEditError(session, interaction.Interaction, err, content)
+		return
+	}
+
+	token, err := client.HoyolabToken(userID)
+	if err != nil {
+		content := "You are not registered yet, please register first."
+		utils.InteractionResponseEditError(session, interaction.Interaction, err, content)
+		return
+	}
+
+	cookie := network.NewCookie(token.LtokenV2, token.LtmidV2, token.LtuidV2)
 
 	daily := NewDailyReward(Hk4eEndpoint, GenshinEventID, GenshinActID, GenshinSignGame)
 	res, err := daily.Claim(cookie)
 
-	message := fmt.Sprintf("You have successfully checked in, %s!", interaction.Member.Mention())
+	message := fmt.Sprintf("You have successfully checked in, %s!", discordUser.Mention())
 
 	if err != nil {
 		message = fmt.Sprint(err)
@@ -52,10 +67,7 @@ func dailyCommandHandler(session *discordgo.Session, interaction *discordgo.Inte
 		message = res.Message
 	}
 
-	session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
-		Type: discordgo.InteractionResponseChannelMessageWithSource,
-		Data: &discordgo.InteractionResponseData{
-			Content: message,
-		},
+	session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
+		Content: &message,
 	})
 }

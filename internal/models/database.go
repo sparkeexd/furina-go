@@ -4,58 +4,61 @@ import (
 	"os"
 	"sync"
 
-	"github.com/nedpals/supabase-go"
+	"github.com/sparkeexd/mimo/internal/utils"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
 )
 
 var (
-	// Supabase client singleton.
+	// Database client singleton.
 	instance *database
 
 	// Mutex to initialize singleton.
 	mutex = &sync.Mutex{}
 )
 
-// Supabase client.
+// Database client.
 type database struct {
-	client *supabase.Client
+	db *gorm.DB
 }
 
-// Response structure from "users" table.
-type UserResponse struct {
-	DiscordID int    `json:"discord_id"`
-	LtokenV2  string `json:"ltoken_v2"`
-	LtmidV2   string `json:"ltmid_v2"`
-	LtuidV2   string `json:"ltuid_v2"`
-	CreatedAt string `json:"created_at"`
+// Model for "hoyolab_tokens" table.
+type HoyolabToken struct {
+	UserID    int `gorm:"primaryKey"`
+	LtokenV2  string
+	LtmidV2   string
+	LtuidV2   string
+	CreatedAt string
 }
 
-// Returns a Supabase client singleton.
-func DatabaseClient() *database {
+// Returns a PostgreSQL GORM client singleton.
+func DatabaseClient() (*database, error) {
 	mutex.Lock()
 	defer mutex.Unlock()
 
 	if instance == nil {
-		projectURL := os.Getenv("SUPABASE_PROJECT_URL")
-		apiKey := os.Getenv("SUPABASE_PUBLISHABLE_KEY")
-		client := supabase.CreateClient(projectURL, apiKey)
+		dsn := os.Getenv("DATABASE_URL")
+		logLevel := utils.LogLevel()
 
-		instance = &database{client: client}
+		db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{
+			Logger: logger.Default.LogMode(logLevel),
+		})
+
+		if err != nil {
+			return nil, err
+		}
+
+		instance = &database{db: db}
 	}
 
-	return instance
+	return instance, nil
 }
 
 // Get user's ltoken_v2, ltmid_v2, and ltuid_v2 tokens from the database.
-func (database *database) GetUser(discordID string) (UserResponse, error) {
-	var user UserResponse
+func (database *database) HoyolabToken(userID int) (HoyolabToken, error) {
+	var token HoyolabToken
 
-	client := database.client
-	err := client.DB.
-		From("users").
-		Select().
-		Single().
-		Eq("discord_id", discordID).
-		Execute(&user)
-
-	return user, err
+	tx := database.db.First(&token, userID)
+	return token, tx.Error
 }

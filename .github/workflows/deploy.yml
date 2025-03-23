@@ -59,5 +59,4 @@ jobs:
           --container-image "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA" \
           --container-env ENV=production \
           --container-env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
-          --container-env SUPABASE_PROJECT_URL=${{ secrets.SUPABASE_PROJECT_URL }} \
-          --container-env SUPABASE_PUBLISHABLE_KEY=${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
+          --container-env DATABASE_URL=${{ secrets.DATABASE_URL }}

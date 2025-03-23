@@ -7,6 +7,6 @@ import (
 )
 
 // Log when the bot is ready to start receiving commands.
-func Ready(s *discordgo.Session, r *discordgo.Ready) {
-	log.Printf("Logged in as: %v#%v", s.State.User.Username, s.State.User.Discriminator)
+func Ready(session *discordgo.Session, ready *discordgo.Ready) {
+	log.Printf("Logged in as: %v#%v", session.State.User.Username, session.State.User.Discriminator)
 }

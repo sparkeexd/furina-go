@@ -6,8 +6,6 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     env_file: .env.development
-    ports:
-      - "8080:8080"
     develop:
       watch:
         - action: rebuild

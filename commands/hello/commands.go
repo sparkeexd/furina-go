@@ -5,6 +5,7 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/sparkeexd/mimo/internal/models"
+	"github.com/sparkeexd/mimo/internal/utils"
 )
 
 var (
@@ -26,10 +27,12 @@ var helloCommand = discordgo.ApplicationCommand{
 // Reply with a simple hello greeting to the user.
 // Calls the user by their display name or server nickname if present, otherwise defaults to their username.
 func helloCommandHandler(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
+	user := utils.GetDiscordUser(interaction)
+
 	session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
-			Content: fmt.Sprintf("Hello there, %v!", interaction.Member.Mention()),
+			Content: fmt.Sprintf("Hello there, %v!", user.Mention()),
 		},
 	})
 }
