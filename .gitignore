@@ -20,9 +20,12 @@
 # Go workspace file
 go.work
 
-# Environment variables for development purposes (not required for actual use)
+# Environment variables
 .env*
-.bashrc
+!.env.example
 
 # Go builds
 bin
+
+# Database dumps
+dump.bak

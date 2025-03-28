@@ -55,12 +55,10 @@ func dailyCommandHandler(session *discordgo.Session, interaction *discordgo.Inte
 	}
 
 	cookie := network.NewCookie(token.LtokenV2, token.LtmidV2, token.LtuidV2)
-
 	daily := NewDailyReward(Hk4eEndpoint, GenshinEventID, GenshinActID, GenshinSignGame)
 	res, err := daily.Claim(cookie)
 
 	message := fmt.Sprintf("You have successfully checked in, %s!", discordUser.Mention())
-
 	if err != nil {
 		message = fmt.Sprint(err)
 	} else if res.Retcode != 0 {

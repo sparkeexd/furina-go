@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - master
+      - deploy_cloud
   workflow_dispatch:
 
 jobs:
@@ -59,4 +60,6 @@ jobs:
           --container-image "gcr.io/${{ secrets.GCE_PROJECT_ID }}/${{ secrets.GCE_INSTANCE }}:$GITHUB_SHA" \
           --container-env ENV=production \
           --container-env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
-          --container-env DATABASE_URL=${{ secrets.DATABASE_URL }}
+          --container-env DATABASE_URL=${{ secrets.DATABASE_URL }} \
+          --remove-container-env SUPABASE_PROJECT_URL \
+          --remove-container-env SUPABASE_PUBLISHABLE_KEY
