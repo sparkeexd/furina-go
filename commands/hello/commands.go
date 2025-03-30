@@ -28,7 +28,6 @@ var helloCommand = discordgo.ApplicationCommand{
 // Calls the user by their display name or server nickname if present, otherwise defaults to their username.
 func helloCommandHandler(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
 	user := utils.GetDiscordUser(interaction)
-
 	session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{

@@ -3,7 +3,7 @@
 {
 	"name": "Dev Container",
 	"dockerComposeFile": "../compose.yaml",
-	"service": "dev-container",
+	"service": "bot",
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 	"features": {
 		"ghcr.io/devcontainers/features/docker-outside-of-docker": {},
@@ -12,5 +12,19 @@
 		"ghcr.io/guiyomh/features/just:0": {},
 		"ghcr.io/robbert229/devcontainer-features/postgresql-client:1": { "version": 15 }
 	},
-	"postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}"
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"be5invis.toml",
+				"eamodio.gitlens",
+				"github.copilot",
+				"github.copilot-chat",
+				"github.vscode-github-actions",
+				"golang.go",
+				"ms-azuretools.vscode-docker",
+				"nefrob.vscode-just-syntax"
+			]
+		}
+	},
+	"postStartCommand": "bash ${containerWorkspaceFolder}/.devcontainer/script.sh ${containerWorkspaceFolder}"
 }
