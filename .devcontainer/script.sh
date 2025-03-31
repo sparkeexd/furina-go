@@ -21,5 +21,5 @@ if [ $TABLE_COUNT -eq 0 ]; then
             sleep 2
     done
 
-    cat ./.devcontainer/init.sql | exec_psql &> /dev/null && echo "PostgreSQL database is ready!"
+    cat ./.devcontainer/schema.sql | exec_psql &> /dev/null && echo "PostgreSQL database is ready!"
 fi

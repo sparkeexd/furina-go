@@ -29,9 +29,10 @@ func (daily DailyReward) Claim(cookie network.Cookie) (DailyRewardClaimResponse,
 	handler := network.NewHandler()
 	endpoint := fmt.Sprintf("%s/event/%s/%s?act_id=%s", daily.BaseURL, daily.EventID, DailyRewardSignParam, daily.ActID)
 
-	request := network.NewRequest(endpoint, http.MethodPost, cookie).
+	request := network.NewRequest(endpoint, http.MethodPost).
+		AddCookie(cookie).
 		AddParam("lang", LangEnglish).
-		AddHeader("x-rpc-signgame", daily.SignGame).
+		AddHeader("X-Rpc-Signgame", daily.SignGame).
 		Build()
 
 	err := handler.Send(request, &res)

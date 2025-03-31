@@ -45,11 +45,6 @@ func (handler Handler) Send(request Request, res any) error {
 		return err
 	}
 
-	// Add cookies.
-	for _, token := range request.cookie.Tokens() {
-		httpRequest.AddCookie(&token)
-	}
-
 	// Send HTTP request.
 	response, err := handler.client.Do(httpRequest)
 	if err != nil {

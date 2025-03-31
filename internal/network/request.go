@@ -20,7 +20,6 @@ type Request struct {
 	body     map[string]interface{}
 	params   map[string]string
 	headers  map[string]string
-	cookie   Cookie
 }
 
 // Request builder that defines a request structure using the builder pattern.
@@ -29,12 +28,11 @@ type RequestBuilder struct {
 }
 
 // Constructor.
-func NewRequest(endpoint string, method string, cookie Cookie) *RequestBuilder {
+func NewRequest(endpoint string, method string) *RequestBuilder {
 	builder := &RequestBuilder{
 		request: Request{
 			endpoint: endpoint,
 			method:   method,
-			cookie:   cookie,
 		},
 	}
 
@@ -50,7 +48,6 @@ func (builder *RequestBuilder) Build() Request {
 		body:     maps.Clone(builder.request.body),
 		params:   maps.Clone(builder.request.params),
 		headers:  maps.Clone(builder.request.headers),
-		cookie:   builder.request.cookie,
 	}
 }
 
