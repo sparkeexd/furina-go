@@ -4,7 +4,6 @@ import (
 	"os"
 
 	"github.com/sanity-io/litter"
-	"gorm.io/gorm/logger"
 )
 
 // Application environment.
@@ -16,16 +15,4 @@ func Dump(message ...any) {
 	if env == "development" {
 		litter.Dump(message...)
 	}
-}
-
-// Sets log level for the GORM logger.
-// Development: Info
-// Production: Error
-func LogLevel() logger.LogLevel {
-	logLevel := logger.Error
-	if env == "development" {
-		logLevel = logger.Info
-	}
-
-	return logLevel
 }
