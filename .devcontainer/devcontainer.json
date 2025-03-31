@@ -9,7 +9,6 @@
 		"ghcr.io/devcontainers/features/docker-outside-of-docker": {},
 		"ghcr.io/devcontainers/features/github-cli:1": {},
 		"ghcr.io/rocker-org/devcontainer-features/apt-packages:1": {},
-		"ghcr.io/guiyomh/features/just:0": {},
 		"ghcr.io/robbert229/devcontainer-features/postgresql-client:1": { "version": 15 }
 	},
 	"customizations": {
@@ -21,10 +20,10 @@
 				"github.copilot-chat",
 				"github.vscode-github-actions",
 				"golang.go",
-				"ms-azuretools.vscode-docker",
-				"nefrob.vscode-just-syntax"
+				"ms-azuretools.vscode-docker"
 			]
 		}
 	},
-	"postStartCommand": "bash ${containerWorkspaceFolder}/.devcontainer/script.sh ${containerWorkspaceFolder}"
+	"postStartCommand": "bash ${containerWorkspaceFolder}/.devcontainer/script.sh ${containerWorkspaceFolder}",
+	"remoteUser": "root"
 }

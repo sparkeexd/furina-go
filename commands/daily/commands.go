@@ -35,7 +35,7 @@ func dailyCommandHandler(session *discordgo.Session, interaction *discordgo.Inte
 	discordUser := utils.GetDiscordUser(interaction)
 	userID, err := strconv.Atoi(discordUser.ID)
 	if err != nil {
-		content := "Failed to parse Discord user ID."
+		content := "Invalid Discord user."
 		utils.InteractionResponseEditError(session, interaction.Interaction, err, content)
 		return
 	}
