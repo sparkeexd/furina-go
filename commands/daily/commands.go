@@ -5,6 +5,7 @@ import (
 	"strconv"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/sparkeexd/mimo/internal/database"
 	"github.com/sparkeexd/mimo/internal/models"
 	"github.com/sparkeexd/mimo/internal/network"
 	"github.com/sparkeexd/mimo/internal/utils"
@@ -27,7 +28,7 @@ var dailyCommand = discordgo.ApplicationCommand{
 }
 
 // Perform Genshin Impact daily check-in on HoYoLab.
-func dailyCommandHandler(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
+func dailyCommandHandler(session *discordgo.Session, interaction *discordgo.InteractionCreate, db *database.DB) {
 	session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
 	})
@@ -40,14 +41,13 @@ func dailyCommandHandler(session *discordgo.Session, interaction *discordgo.Inte
 		return
 	}
 
-	client, err := models.DatabaseClient()
 	if err != nil {
 		content := "Unable to connect to database."
 		utils.InteractionResponseEditError(session, interaction.Interaction, err, content)
 		return
 	}
 
-	token, err := client.HoyolabToken(userID)
+	token, err := db.GetHoyolabToken(userID)
 	if err != nil {
 		content := "You are not registered yet, please register first."
 		utils.InteractionResponseEditError(session, interaction.Interaction, err, content)

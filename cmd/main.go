@@ -7,10 +7,13 @@ import (
 )
 
 func main() {
-	bot := models.NewBot(
+	commands := []map[string]models.Command{
 		hello.Commands,
 		daily.Commands,
-	)
+	}
 
-	bot.Start()
+	jobs := []models.CronJob{}
+
+	bot := NewBot()
+	bot.Start(commands, jobs)
 }
