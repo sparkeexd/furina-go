@@ -91,31 +91,41 @@ func (service *DailyService) DailyClaimCommandHandler(session *discordgo.Session
 
 // Task handler that automatically handles Genshin Impact daily check-in for all registered users.
 func (service *DailyService) AutoDailyClaimTaskHandler(session *discordgo.Session) {
-	startUserID := 0
+	startUserID := -1
 	batchSize := 50
 
-	tokens, err := service.TokenRepository.ListByBatch(startUserID, batchSize)
-	if err != nil {
-		log.Printf("Failed to list tokens: %v", err)
-		return
-	}
-
-	for _, token := range tokens {
-		cookie := network.NewCookie(token.LtokenV2, token.LtmidV2, token.LtuidV2)
-		context := hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame)
-
-		res, err := service.DailyRepository.Claim(cookie, context)
-		content := res.Message
+	for {
+		tokens, err := service.TokenRepository.ListByBatch(startUserID, batchSize)
 		if err != nil {
-			content = "There was an issue with your daily check-in. Please try registering again."
-		}
-
-		channel, err := session.UserChannelCreate(strconv.Itoa(token.UserID))
-		if err != nil {
-			log.Printf("Failed to send message to user channel %d: %v", token.UserID, err)
+			log.Printf("Failed to list tokens: %v", err)
 			return
 		}
 
-		session.ChannelMessageSend(channel.ID, content)
+		// If no more tokens are found, exit the loop. This means all users have been processed.
+		if len(tokens) == 0 {
+			return
+		}
+
+		for _, token := range tokens {
+			cookie := network.NewCookie(token.LtokenV2, token.LtmidV2, token.LtuidV2)
+			context := hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame)
+
+			res, err := service.DailyRepository.Claim(cookie, context)
+			content := res.Message
+			if err != nil {
+				content = "There was an issue with your daily check-in. Please try registering again."
+			}
+
+			channel, err := session.UserChannelCreate(strconv.Itoa(token.UserID))
+			if err != nil {
+				log.Printf("Failed to send message to user channel %d: %v", token.UserID, err)
+				return
+			}
+
+			session.ChannelMessageSend(channel.ID, content)
+		}
+
+		// Start next batch from the last user ID in the current batch.
+		startUserID = tokens[len(tokens)-1].UserID
 	}
 }
