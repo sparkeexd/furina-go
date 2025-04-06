@@ -11,6 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sparkeexd/mimo/internal/application/service"
 	"github.com/sparkeexd/mimo/internal/domain/action"
+	"github.com/sparkeexd/mimo/internal/infrastructure/hoyolab"
+	"github.com/sparkeexd/mimo/internal/infrastructure/postgres"
 )
 
 // Discord bot.
@@ -23,7 +25,7 @@ type Bot struct {
 }
 
 // Create a new Discord bot.
-func NewBot() *Bot {
+func NewBot() Bot {
 	token := os.Getenv("BOT_TOKEN")
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
@@ -40,19 +42,16 @@ func NewBot() *Bot {
 		log.Fatalf("Failed to initialize scheduler: %v", err)
 	}
 
+	dailyRepository := hoyolab.NewDailyRepository()
+	tokenRepository := postgres.NewTokenRepository(db)
+
 	pingService := service.NewPingService()
-	dailyService := service.NewDailyService(db)
+	dailyService := service.NewDailyService(dailyRepository, tokenRepository)
 
-	commandServices := []action.CommandService{
-		pingService,
-		dailyService,
-	}
+	commandServices := []action.CommandService{&pingService, &dailyService}
+	jobServices := []action.JobService{&dailyService}
 
-	jobServices := []action.JobService{
-		dailyService,
-	}
-
-	bot := &Bot{
+	bot := Bot{
 		Token:           token,
 		Session:         session,
 		CommandServices: commandServices,
@@ -72,10 +71,10 @@ func (bot *Bot) Start() {
 	}
 
 	log.Println("Registering commands...")
-	bot.RegisterCommands()
+	bot.registerCommands()
 
 	log.Println("Registering jobs...")
-	bot.RegisterJobs()
+	bot.registerJobs()
 	bot.Scheduler.Start()
 
 	bot.Session.AddHandler(bot.Ready)
@@ -94,7 +93,7 @@ func (bot *Bot) Start() {
 // Register the slash commands.
 // Middleware is attached to each command to block interactions outside of the guild.
 // Requires reloading Discord client to view the changes.
-func (bot *Bot) RegisterCommands() {
+func (bot *Bot) registerCommands() {
 	var commandsToRegister []*discordgo.ApplicationCommand
 
 	for _, service := range bot.CommandServices {
@@ -118,7 +117,7 @@ func (bot *Bot) RegisterCommands() {
 }
 
 // Register the cron jobs.
-func (bot *Bot) RegisterJobs() {
+func (bot *Bot) registerJobs() {
 	for _, service := range bot.JobServices {
 		jobs := service.Jobs(bot.Session)
 

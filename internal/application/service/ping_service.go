@@ -12,8 +12,8 @@ import (
 type PingService struct{}
 
 // Create a new ping service.
-func NewPingService() *PingService {
-	return &PingService{}
+func NewPingService() PingService {
+	return PingService{}
 }
 
 // Service's slash commands to be registered.

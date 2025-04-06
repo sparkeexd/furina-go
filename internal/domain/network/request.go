@@ -17,7 +17,7 @@ const (
 type Request struct {
 	endpoint string
 	method   string
-	body     map[string]interface{}
+	body     map[string]any
 	params   map[string]string
 	headers  map[string]string
 }
@@ -52,9 +52,9 @@ func (builder *RequestBuilder) Build() Request {
 }
 
 // Add body.
-func (builder *RequestBuilder) AddBody(key string, value interface{}) *RequestBuilder {
+func (builder *RequestBuilder) AddBody(key string, value any) *RequestBuilder {
 	if builder.request.body == nil {
-		builder.request.body = make(map[string]interface{})
+		builder.request.body = make(map[string]any)
 	}
 
 	builder.request.body[key] = value

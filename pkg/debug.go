@@ -8,22 +8,26 @@ import (
 	"github.com/sanity-io/litter"
 )
 
-// Application environment.
-var env = os.Getenv("ENV")
-
 // Dump data structures to aid in debugging and testing.
-// Prevents dumping in production environment if this function is left in code.
 func Dump(message ...any) {
-	if env == "development" {
-		litter.Dump(message...)
+	env := os.Getenv("ENV")
+	if env != "development" {
+		return
 	}
+
+	litter.Dump(message...)
 }
 
 // Print JSON response returned from API.
 func PrintJSON(response any, err error) {
+	env := os.Getenv("ENV")
+	if env != "development" {
+		return
+	}
+
 	jsonString, _ := json.Marshal(response)
 
-	data := make(map[string]interface{})
+	data := make(map[string]any)
 	json.Unmarshal(jsonString, &data)
 
 	if err != nil {

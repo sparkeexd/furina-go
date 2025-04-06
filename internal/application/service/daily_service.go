@@ -7,7 +7,6 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-co-op/gocron/v2"
-	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sparkeexd/mimo/internal/domain/action"
 	"github.com/sparkeexd/mimo/internal/domain/network"
 	"github.com/sparkeexd/mimo/internal/infrastructure/hoyolab"
@@ -22,10 +21,10 @@ type DailyService struct {
 }
 
 // Create a new daily service.
-func NewDailyService(db *pgxpool.Pool) *DailyService {
-	return &DailyService{
-		DailyRepository: hoyolab.NewDailyRepository(),
-		TokenRepository: postgres.NewTokenRepository(db),
+func NewDailyService(dailyRepository hoyolab.DailyRepository, tokenRepository postgres.TokenRepository) DailyService {
+	return DailyService{
+		DailyRepository: dailyRepository,
+		TokenRepository: tokenRepository,
 	}
 }
 
