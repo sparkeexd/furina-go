@@ -1,19 +1,10 @@
 package main
 
 import (
-	"github.com/sparkeexd/mimo/commands/daily"
-	"github.com/sparkeexd/mimo/commands/hello"
-	"github.com/sparkeexd/mimo/internal/models"
+	"github.com/sparkeexd/mimo/internal/application/bot"
 )
 
 func main() {
-	commands := []map[string]models.Command{
-		hello.Commands,
-		daily.Commands,
-	}
-
-	jobs := []models.CronJob{}
-
-	bot := NewBot()
-	bot.Start(commands, jobs)
+	bot := bot.NewBot()
+	bot.Start()
 }

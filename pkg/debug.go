@@ -1,23 +1,25 @@
-package utils
+package pkg
 
 import (
 	"encoding/json"
 	"log"
+	"os"
+
+	"github.com/sanity-io/litter"
 )
 
-// Return JSON unmarshalled response with the given model.
-func UnmarshalJSON[V any](res []byte, model V) error {
-	var err error
+// Application environment.
+var env = os.Getenv("ENV")
 
-	if err = json.Unmarshal(res, &model); err != nil {
-		return err
+// Dump data structures to aid in debugging and testing.
+// Prevents dumping in production environment if this function is left in code.
+func Dump(message ...any) {
+	if env == "development" {
+		litter.Dump(message...)
 	}
-
-	return err
 }
 
 // Print JSON response returned from API.
-// Used for development/debugging purposes.
 func PrintJSON(response any, err error) {
 	jsonString, _ := json.Marshal(response)
 
