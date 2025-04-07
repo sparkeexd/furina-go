@@ -76,15 +76,19 @@ func (service *DailyService) DailyClaimCommandHandler(session *discordgo.Session
 	context := hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame)
 
 	res, err := service.DailyRepository.Claim(cookie, context)
-	message := fmt.Sprintf("You have successfully checked in, %s!", discordUser.Mention())
 	if err != nil {
-		message = fmt.Sprint(err)
-	} else if res.Retcode != 0 {
-		message = res.Message
+		content := "An internal error occurred while trying to check in. Please try again later."
+		pkg.InteractionResponseEditError(session, interaction.Interaction, err, content)
+		return
+	}
+
+	content := fmt.Sprintf("You have successfully checked in, %s!", discordUser.Mention())
+	if res.Retcode != 0 {
+		content = res.Message
 	}
 
 	session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
-		Content: &message,
+		Content: &content,
 	})
 }
 
@@ -110,9 +114,13 @@ func (service *DailyService) AutoDailyClaimTaskHandler(session *discordgo.Sessio
 			context := hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame)
 
 			res, err := service.DailyRepository.Claim(cookie, context)
-			content := res.Message
-			if err != nil {
-				content = "There was an issue with your daily check-in. Please try registering again."
+
+			content := "We have successfully checked in for you today!"
+			if res.Retcode != 0 {
+				content = res.Message
+			} else if err != nil {
+				// TODO: Add retry task handler.
+				content = "An internal error occurred while trying to check in for you today."
 			}
 
 			channel, err := session.UserChannelCreate(strconv.Itoa(token.UserID))
