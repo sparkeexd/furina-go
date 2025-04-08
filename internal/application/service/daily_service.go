@@ -17,14 +17,14 @@ import (
 // Service that handles daily check-in commands.
 type DailyService struct {
 	DailyRepository hoyolab.DailyRepository
-	TokenRepository postgres.TokenRepository
+	UserRepository  postgres.UserRepository
 }
 
 // Create a new daily service.
-func NewDailyService(dailyRepository hoyolab.DailyRepository, tokenRepository postgres.TokenRepository) DailyService {
+func NewDailyService(dailyRepository hoyolab.DailyRepository, userRepository postgres.UserRepository) DailyService {
 	return DailyService{
 		DailyRepository: dailyRepository,
-		TokenRepository: tokenRepository,
+		UserRepository:  userRepository,
 	}
 }
 
@@ -51,7 +51,7 @@ func (service *DailyService) Jobs(session *discordgo.Session) []action.CronJob {
 	}
 }
 
-// Perform Genshin Impact daily check-in on HoYoLab.
+// Perform Genshin Impact daily check-in on HoYoLAB.
 func (service *DailyService) DailyClaimCommandHandler(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
 	session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseDeferredChannelMessageWithSource,
@@ -65,14 +65,14 @@ func (service *DailyService) DailyClaimCommandHandler(session *discordgo.Session
 		return
 	}
 
-	token, err := service.TokenRepository.GetByUserID(userID)
+	user, err := service.UserRepository.GetByUserID(userID)
 	if err != nil {
 		content := "You are not registered yet, please register first."
 		pkg.InteractionResponseEditError(session, interaction.Interaction, err, content)
 		return
 	}
 
-	cookie := network.NewCookie(token.LtokenV2, token.LtmidV2, token.LtuidV2)
+	cookie := network.NewCookie(user.LtokenV2, user.LtmidV2, user.LtuidV2)
 	context := hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame)
 
 	res, err := service.DailyRepository.Claim(cookie, context)
@@ -98,19 +98,19 @@ func (service *DailyService) AutoDailyClaimTaskHandler(session *discordgo.Sessio
 	batchSize := 50
 
 	for {
-		tokens, err := service.TokenRepository.ListByBatch(startUserID, batchSize)
+		users, err := service.UserRepository.ListByBatch(startUserID, batchSize)
 		if err != nil {
-			log.Printf("Failed to list tokens: %v", err)
+			log.Printf("Failed to list users: %v", err)
 			return
 		}
 
-		// If no more tokens are found, exit the loop. This means all users have been processed.
-		if len(tokens) == 0 {
+		// If no more users are found, exit the loop. This means all users have been processed.
+		if len(users) == 0 {
 			return
 		}
 
-		for _, token := range tokens {
-			cookie := network.NewCookie(token.LtokenV2, token.LtmidV2, token.LtuidV2)
+		for _, user := range users {
+			cookie := network.NewCookie(user.LtokenV2, user.LtmidV2, user.LtuidV2)
 			context := hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame)
 
 			res, err := service.DailyRepository.Claim(cookie, context)
@@ -123,9 +123,9 @@ func (service *DailyService) AutoDailyClaimTaskHandler(session *discordgo.Sessio
 				content = "An internal error occurred while trying to check in for you today."
 			}
 
-			channel, err := session.UserChannelCreate(strconv.Itoa(token.UserID))
+			channel, err := session.UserChannelCreate(strconv.Itoa(user.ID))
 			if err != nil {
-				log.Printf("Failed to send message to user channel %d: %v", token.UserID, err)
+				log.Printf("Failed to send message to user channel %d: %v", user.ID, err)
 				return
 			}
 
@@ -133,6 +133,6 @@ func (service *DailyService) AutoDailyClaimTaskHandler(session *discordgo.Sessio
 		}
 
 		// Start next batch from the last user ID in the current batch.
-		startUserID = tokens[len(tokens)-1].UserID
+		startUserID = users[len(users)-1].ID
 	}
 }

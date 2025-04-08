@@ -50,7 +50,7 @@ type DailyRewardContext struct {
 	SignGame string
 }
 
-// Daily reward claim model from HoYoLab API.
+// Daily reward claim model from HoYoLAB API.
 type DailyClaim struct {
 	Retcode int    `json:"retcode"`
 	Message string `json:"message"`

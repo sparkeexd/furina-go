@@ -12,7 +12,7 @@ const (
 	encodingBr      = "br"
 )
 
-// HTTP request wrapper for holding parameters required for HoYoLab endpoints.
+// HTTP request wrapper for holding parameters required for HoYoLAB endpoints.
 // Used by Handler to be parsed into a HTTP request.
 type Request struct {
 	endpoint string
@@ -96,7 +96,7 @@ func (builder *RequestBuilder) AddLanguage(language string) *RequestBuilder {
 	return builder.AddHeader("X-Rpc-Language", language)
 }
 
-// Add default headers that are required by HoYoLab endpoints.
+// Add default headers that are required by HoYoLAB endpoints.
 func (builder *RequestBuilder) addDefaultHeaders() *RequestBuilder {
 	builder.AddHeader("Accept", "application/json, text/plain, */*")
 	builder.AddHeader("Content-Type", "application/json")

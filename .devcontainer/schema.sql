@@ -37,11 +37,11 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: tokens; Type: TABLE; Schema: public; Owner: postgres
+-- Name: users; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.tokens (
-    user_id bigint NOT NULL,
+CREATE TABLE public.users (
+    id bigint NOT NULL,
     ltoken_v2 text NOT NULL,
     ltmid_v2 text NOT NULL,
     ltuid_v2 text NOT NULL,
@@ -49,29 +49,29 @@ CREATE TABLE public.tokens (
 );
 
 
-ALTER TABLE public.tokens OWNER TO postgres;
+ALTER TABLE public.users OWNER TO postgres;
 
 --
--- Name: tokens tokens_pkey1; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: users users_pkey1; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.tokens
-    ADD CONSTRAINT tokens_pkey1 PRIMARY KEY (user_id);
-
-
---
--- Name: tokens tokens_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.tokens
-    ADD CONSTRAINT tokens_user_id_key UNIQUE (user_id);
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_pkey1 PRIMARY KEY (id);
 
 
 --
--- Name: tokens; Type: ROW SECURITY; Schema: public; Owner: postgres
+-- Name: users users_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE public.tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ONLY public.users
+    ADD CONSTRAINT users_id_key UNIQUE (id);
+
+
+--
+-- Name: users; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 
 
 --

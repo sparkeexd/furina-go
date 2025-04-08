@@ -13,7 +13,7 @@ const (
 	ltuidV2Key  = "ltuid_v2"
 )
 
-// Cookie data class that stores tokens required for calling HoYoLab endpoints.
+// Cookie data class that stores tokens required for calling HoYoLAB endpoints.
 type Cookie struct {
 	ltokenV2 http.Cookie
 	ltmidV2  http.Cookie

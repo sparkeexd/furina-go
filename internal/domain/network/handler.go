@@ -15,7 +15,7 @@ import (
 const clientDefaultTimeout = 10 * time.Second
 
 // Base handler for dealing with HTTP request processes.
-// This ranges from sending HTTP requests to HoYoLab endpoints, parsing responses, and setting cookies.
+// This ranges from sending HTTP requests to HoYoLAB endpoints, parsing responses, and setting cookies.
 type Handler struct {
 	client http.Client
 }
@@ -102,7 +102,7 @@ func (handler *Handler) createHttpRequest(request Request) (*http.Request, error
 }
 
 // Parse response body by decompressing content according to its encoding.
-// HoYoLab endpoints uses the standard gzip, deflate and brotli encodings.
+// HoYoLAB endpoints uses the standard gzip, deflate and brotli encodings.
 func (handler *Handler) parseResponse(response *http.Response) ([]byte, error) {
 	var err error
 	var reader io.ReadCloser
