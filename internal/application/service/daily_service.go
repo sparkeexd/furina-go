@@ -45,7 +45,7 @@ func (service *DailyService) Commands() map[string]action.Command {
 func (service *DailyService) Jobs(session *discordgo.Session) []action.CronJob {
 	return []action.CronJob{
 		action.NewCronJob(
-			gocron.CronJob("0 0 * * *", false),
+			gocron.CronJob("0 16 * * *", false),
 			gocron.NewTask(service.AutoDailyClaimTaskHandler, session),
 		),
 	}

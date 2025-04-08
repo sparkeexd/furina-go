@@ -37,10 +37,10 @@ SET default_tablespace = '';
 SET default_table_access_method = heap;
 
 --
--- Name: hoyolab_tokens; Type: TABLE; Schema: public; Owner: postgres
+-- Name: tokens; Type: TABLE; Schema: public; Owner: postgres
 --
 
-CREATE TABLE public.hoyolab_tokens (
+CREATE TABLE public.tokens (
     user_id bigint NOT NULL,
     ltoken_v2 text NOT NULL,
     ltmid_v2 text NOT NULL,
@@ -49,29 +49,29 @@ CREATE TABLE public.hoyolab_tokens (
 );
 
 
-ALTER TABLE public.hoyolab_tokens OWNER TO postgres;
+ALTER TABLE public.tokens OWNER TO postgres;
 
 --
--- Name: hoyolab_tokens hoyolab_tokens_pkey1; Type: CONSTRAINT; Schema: public; Owner: postgres
+-- Name: tokens tokens_pkey1; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE ONLY public.hoyolab_tokens
-    ADD CONSTRAINT hoyolab_tokens_pkey1 PRIMARY KEY (user_id);
-
-
---
--- Name: hoyolab_tokens hoyolab_tokens_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
---
-
-ALTER TABLE ONLY public.hoyolab_tokens
-    ADD CONSTRAINT hoyolab_tokens_user_id_key UNIQUE (user_id);
+ALTER TABLE ONLY public.tokens
+    ADD CONSTRAINT tokens_pkey1 PRIMARY KEY (user_id);
 
 
 --
--- Name: hoyolab_tokens; Type: ROW SECURITY; Schema: public; Owner: postgres
+-- Name: tokens tokens_user_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
-ALTER TABLE public.hoyolab_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE ONLY public.tokens
+    ADD CONSTRAINT tokens_user_id_key UNIQUE (user_id);
+
+
+--
+-- Name: tokens; Type: ROW SECURITY; Schema: public; Owner: postgres
+--
+
+ALTER TABLE public.tokens ENABLE ROW LEVEL SECURITY;
 
 
 --

@@ -31,8 +31,8 @@ func NewTokenRepository(db *pgxpool.Pool) TokenRepository {
 func (repository TokenRepository) GetByUserID(userID int) (Token, error) {
 	query := `
 		SELECT *
-		FROM hoyolab_tokens ht
-		WHERE ht.user_id = @userId;
+		FROM tokens t
+		WHERE t.user_id = @userId;
 	`
 	args := pgx.NamedArgs{"userId": userID}
 
@@ -50,9 +50,9 @@ func (repository TokenRepository) GetByUserID(userID int) (Token, error) {
 func (repository TokenRepository) ListByBatch(startUserID int, batchSize int) ([]Token, error) {
 	query := `
 		SELECT *
-		FROM hoyolab_tokens ht
-		WHERE ht.user_id > @userId
-		ORDER BY ht.user_id
+		FROM tokens t
+		WHERE t.user_id > @userId
+		ORDER BY t.user_id
 		LIMIT @limit;
 	`
 	args := pgx.NamedArgs{
