@@ -80,7 +80,7 @@ func (daily *DailyRepository) Claim(cookie network.Cookie, context DailyRewardCo
 	endpoint := fmt.Sprintf("%s/event/%s/%s?act_id=%s", context.BaseURL, context.EventID, DailyRewardSignParam, context.ActID)
 
 	request := network.NewRequest(endpoint, http.MethodPost).
-		// AddCookie(cookie).
+		AddCookie(cookie).
 		AddParam("lang", LangEnglish).
 		AddHeader("X-Rpc-Signgame", context.SignGame).
 		Build()
