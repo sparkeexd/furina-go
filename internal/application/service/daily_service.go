@@ -16,15 +16,15 @@ import (
 
 // Service that handles daily check-in commands.
 type DailyService struct {
-	DailyRepository hoyolab.DailyRepository
-	UserRepository  postgres.UserRepository
+	DailyRepository       hoyolab.DailyRepository
+	HoyolabUserRepository postgres.HoyolabUserRepository
 }
 
 // Create a new daily service.
-func NewDailyService(dailyRepository hoyolab.DailyRepository, userRepository postgres.UserRepository) DailyService {
+func NewDailyService(dailyRepository hoyolab.DailyRepository, hoyolabUserRepository postgres.HoyolabUserRepository) DailyService {
 	return DailyService{
-		DailyRepository: dailyRepository,
-		UserRepository:  userRepository,
+		DailyRepository:       dailyRepository,
+		HoyolabUserRepository: hoyolabUserRepository,
 	}
 }
 
@@ -58,21 +58,21 @@ func (service *DailyService) DailyClaimCommandHandler(session *discordgo.Session
 	})
 
 	discordUser := pkg.GetDiscordUser(interaction)
-	userID, err := strconv.Atoi(discordUser.ID)
+	discordID, err := strconv.Atoi(discordUser.ID)
 	if err != nil {
 		content := "Invalid Discord user."
 		pkg.InteractionResponseEditError(session, interaction.Interaction, err, content)
 		return
 	}
 
-	user, err := service.UserRepository.GetByUserID(userID)
+	user, err := service.HoyolabUserRepository.GetByDiscordID(discordID)
 	if err != nil {
 		content := "You are not registered yet, please register first."
 		pkg.InteractionResponseEditError(session, interaction.Interaction, err, content)
 		return
 	}
 
-	cookie := network.NewCookie(user.LtokenV2, user.LtmidV2, user.LtuidV2)
+	cookie := network.NewCookie(user.LtokenV2, user.LtmidV2, strconv.Itoa(user.ID))
 	context := hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame)
 
 	res, err := service.DailyRepository.Claim(cookie, context)
@@ -94,11 +94,11 @@ func (service *DailyService) DailyClaimCommandHandler(session *discordgo.Session
 
 // Task handler that automatically handles Genshin Impact daily check-in for all registered users.
 func (service *DailyService) AutoDailyClaimTaskHandler(session *discordgo.Session) {
-	startUserID := -1
+	startDiscordID := -1
 	batchSize := 50
 
 	for {
-		users, err := service.UserRepository.ListByBatch(startUserID, batchSize)
+		users, err := service.HoyolabUserRepository.ListByBatch(startDiscordID, batchSize)
 		if err != nil {
 			log.Printf("Failed to list users: %v", err)
 			return
@@ -110,7 +110,7 @@ func (service *DailyService) AutoDailyClaimTaskHandler(session *discordgo.Sessio
 		}
 
 		for _, user := range users {
-			cookie := network.NewCookie(user.LtokenV2, user.LtmidV2, user.LtuidV2)
+			cookie := network.NewCookie(user.LtokenV2, user.LtmidV2, strconv.Itoa(user.ID))
 			context := hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame)
 
 			res, err := service.DailyRepository.Claim(cookie, context)
@@ -132,7 +132,7 @@ func (service *DailyService) AutoDailyClaimTaskHandler(session *discordgo.Sessio
 			session.ChannelMessageSend(channel.ID, content)
 		}
 
-		// Start next batch from the last user ID in the current batch.
-		startUserID = users[len(users)-1].ID
+		// Start next batch from the last Discord ID in the current batch.
+		startDiscordID = users[len(users)-1].ID
 	}
 }

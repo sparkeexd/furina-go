@@ -43,7 +43,7 @@ func NewBot() Bot {
 	}
 
 	dailyRepository := hoyolab.NewDailyRepository()
-	userRepository := postgres.NewUserRepository(db)
+	userRepository := postgres.NewHoyolabUserRepository(db)
 
 	pingService := service.NewPingService()
 	dailyService := service.NewDailyService(dailyRepository, userRepository)
