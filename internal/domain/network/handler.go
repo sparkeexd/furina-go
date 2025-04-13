@@ -16,12 +16,12 @@ const clientDefaultTimeout = 10 * time.Second
 
 // Base handler for dealing with HTTP request processes.
 // This ranges from sending HTTP requests to HoYoLAB endpoints, parsing responses, and setting cookies.
-type Handler struct {
-	client http.Client
+type HTTPHandler struct {
+	Client http.Client
 }
 
 // Constructor.
-func NewHandler() Handler {
+func NewHTTPHandler() HTTPHandler {
 	client := http.DefaultClient
 	client.Timeout = clientDefaultTimeout
 	client.Transport = &http.Transport{
@@ -29,14 +29,14 @@ func NewHandler() Handler {
 		MaxIdleConnsPerHost: 2,
 	}
 
-	handler := Handler{client: *client}
+	handler := HTTPHandler{Client: *client}
 	return handler
 }
 
 // Sends a HTTP request.
 // Returns a generic map from the unmarshalled response.
 // Specific retcode errors are handled by their respective clients.
-func (handler *Handler) Send(request Request, res any) error {
+func (handler *HTTPHandler) Send(request Request, res any) error {
 	// Build HTTP request.
 	httpRequest, err := handler.createHttpRequest(request)
 	if err != nil {
@@ -44,7 +44,7 @@ func (handler *Handler) Send(request Request, res any) error {
 	}
 
 	// Send HTTP request.
-	response, err := handler.client.Do(httpRequest)
+	response, err := handler.Client.Do(httpRequest)
 	if err != nil {
 		return err
 	}
@@ -66,7 +66,7 @@ func (handler *Handler) Send(request Request, res any) error {
 }
 
 // Create HTTP request structure.
-func (handler *Handler) createHttpRequest(request Request) (*http.Request, error) {
+func (handler *HTTPHandler) createHttpRequest(request Request) (*http.Request, error) {
 	var body io.Reader
 
 	// JSON marshal request body.
@@ -103,7 +103,7 @@ func (handler *Handler) createHttpRequest(request Request) (*http.Request, error
 
 // Parse response body by decompressing content according to its encoding.
 // HoYoLAB endpoints uses the standard gzip, deflate and brotli encodings.
-func (handler *Handler) parseResponse(response *http.Response) ([]byte, error) {
+func (handler *HTTPHandler) parseResponse(response *http.Response) ([]byte, error) {
 	var err error
 	var reader io.ReadCloser
 

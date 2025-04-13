@@ -2,7 +2,7 @@ package bot
 
 import (
 	"context"
-	"log"
+	"log/slog"
 	"os"
 	"os/signal"
 
@@ -11,52 +11,56 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sparkeexd/mimo/internal/application/service"
 	"github.com/sparkeexd/mimo/internal/domain/action"
+	"github.com/sparkeexd/mimo/internal/domain/logger"
 	"github.com/sparkeexd/mimo/internal/infrastructure/hoyolab"
 	"github.com/sparkeexd/mimo/internal/infrastructure/postgres"
 )
 
 // Discord bot.
 type Bot struct {
-	Token           string
 	Session         *discordgo.Session
 	CommandServices []action.CommandService
 	JobServices     []action.JobService
 	Scheduler       gocron.Scheduler
+	Logger          *logger.Logger
 }
 
 // Create a new Discord bot.
 func NewBot() Bot {
+	logger := logger.NewLogger()
+
 	token := os.Getenv("BOT_TOKEN")
 	session, err := discordgo.New("Bot " + token)
 	if err != nil {
-		log.Fatalf("Invalid bot parameters: %v", err)
+		logger.Fatal("Invalid bot parameters", slog.String("error", err.Error()))
 	}
 
 	db, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
 	if err != nil {
-		log.Fatalf("Unable to connect to database: %v", err)
+		logger.Fatal("Unable to connect to database", slog.String("error", err.Error()))
 	}
 
 	scheduler, err := gocron.NewScheduler()
 	if err != nil {
-		log.Fatalf("Failed to initialize scheduler: %v", err)
+		logger.Fatal("Failed to initialize scheduler", slog.String("error", err.Error()))
 	}
 
-	dailyRepository := hoyolab.NewDailyRepository()
+	gameRepository := postgres.NewGameRepository(db)
+	dailyRepository := hoyolab.NewDailyRepository(logger)
 	userRepository := postgres.NewHoyolabUserRepository(db)
 
 	pingService := service.NewPingService()
-	dailyService := service.NewDailyService(dailyRepository, userRepository)
+	dailyService := service.NewDailyService(dailyRepository, userRepository, gameRepository, logger)
 
 	commandServices := []action.CommandService{&pingService, &dailyService}
 	jobServices := []action.JobService{&dailyService}
 
 	bot := Bot{
-		Token:           token,
 		Session:         session,
 		CommandServices: commandServices,
 		JobServices:     jobServices,
 		Scheduler:       scheduler,
+		Logger:          logger,
 	}
 
 	return bot
@@ -64,28 +68,28 @@ func NewBot() Bot {
 
 // Start Discord bot.
 func (bot *Bot) Start() {
-	log.Println("Creating discord bot session...")
+	bot.Session.AddHandler(bot.Ready)
+
+	bot.Logger.Info("Creating discord bot session...")
 	err := bot.Session.Open()
 	if err != nil {
-		log.Fatalf("Cannot open the session: %v", err)
+		bot.Logger.Fatal("Cannot open the session", slog.String("error", err.Error()))
 	}
 
-	log.Println("Registering commands...")
+	bot.Logger.Info("Registering commands...")
 	bot.registerCommands()
 
-	log.Println("Registering jobs...")
+	bot.Logger.Info("Registering jobs...")
 	bot.registerJobs()
 	bot.Scheduler.Start()
 
-	bot.Session.AddHandler(bot.Ready)
-
 	// Event listener to stop the bot.
-	log.Println("Bot is now running! Press Ctrl+C to exit.")
+	bot.Logger.Info("Bot is now running! Press Ctrl+C to exit.")
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
 
-	log.Println("Closing discord bot session...")
+	bot.Logger.Info("Closing discord bot session...")
 	bot.Session.Close()
 	bot.Scheduler.Shutdown()
 }

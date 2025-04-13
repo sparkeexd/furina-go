@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/sparkeexd/mimo/internal/domain/logger"
 	"github.com/sparkeexd/mimo/internal/domain/network"
 )
 
@@ -39,7 +40,9 @@ const (
 )
 
 // Repository for handling daily reward claim.
-type DailyRepository struct{}
+type DailyRepository struct {
+	logger *logger.Logger
+}
 
 // Daily reward endpoints are shared across different games with only minor differences to the URL.
 // This context consolidates the common differences between each game.
@@ -57,8 +60,8 @@ type DailyClaim struct {
 }
 
 // Create a new daily repository.
-func NewDailyRepository() DailyRepository {
-	return DailyRepository{}
+func NewDailyRepository(logger *logger.Logger) DailyRepository {
+	return DailyRepository{logger: logger}
 }
 
 // Create a new daily reward context.
@@ -76,7 +79,7 @@ func NewDailyRewardContext(baseURL, eventID, actID, signGame string) DailyReward
 func (daily *DailyRepository) Claim(cookie network.Cookie, context DailyRewardContext) (DailyClaim, error) {
 	var res DailyClaim
 
-	handler := network.NewHandler()
+	handler := network.NewHTTPHandler()
 	endpoint := fmt.Sprintf("%s/event/%s/%s?act_id=%s", context.BaseURL, context.EventID, DailyRewardSignParam, context.ActID)
 
 	request := network.NewRequest(endpoint, http.MethodPost).

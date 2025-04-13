@@ -26,7 +26,9 @@ type HoyolabUserRepository struct {
 
 // Create a new HoyoLAB user repository.
 func NewHoyolabUserRepository(db *pgxpool.Pool) HoyolabUserRepository {
-	return HoyolabUserRepository{db: db}
+	return HoyolabUserRepository{
+		db: db,
+	}
 }
 
 // Get user's tokens by Discord ID.
@@ -48,17 +50,22 @@ func (repository HoyolabUserRepository) GetByDiscordID(discordID int) (HoyolabUs
 	return user, err
 }
 
-// Lists a batch of users' tokens starting from a specific Discord ID, limited by the given batch size.
-func (repository HoyolabUserRepository) ListByBatch(discordID int, batchSize int) ([]HoyolabUser, error) {
+// Lists a batch of users' tokens by their game account's region.
+// Starts after the specificied Discord ID, limited by the given batch size.
+func (repository HoyolabUserRepository) ListByRegionID(regionID int, offsetDiscordID int, batchSize int) ([]HoyolabUser, error) {
 	query := `
-		SELECT *
+		SELECT hu.*
 		FROM hoyolab_users hu
-		WHERE hu.id > @discordID
+		JOIN game_users gu ON hu.discord_id = gu.discord_id
+		WHERE
+			gu.region_id = @regionID
+			AND hu.id > @discordID
 		ORDER BY hu.id
 		LIMIT @limit;
 	`
 	args := pgx.NamedArgs{
-		"discordID": discordID,
+		"regionID":  regionID,
+		"discordID": offsetDiscordID,
 		"limit":     batchSize,
 	}
 

@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
+	"github.com/sparkeexd/mimo/internal/application/util"
 	"github.com/sparkeexd/mimo/internal/domain/action"
-	"github.com/sparkeexd/mimo/pkg"
 )
 
 // Service that handles a basic ping command to the bot.
@@ -31,7 +31,7 @@ func (service *PingService) Commands() map[string]action.Command {
 
 // Reply with a simple hello greeting to the user.
 func (service *PingService) PingCommandHandler(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
-	user := pkg.GetDiscordUser(interaction)
+	user := util.GetDiscordUser(interaction)
 	session.InteractionRespond(interaction.Interaction, &discordgo.InteractionResponse{
 		Type: discordgo.InteractionResponseChannelMessageWithSource,
 		Data: &discordgo.InteractionResponseData{
