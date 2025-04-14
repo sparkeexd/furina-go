@@ -2,6 +2,7 @@ package logger
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"os"
 )
@@ -11,16 +12,42 @@ type Logger struct {
 	slog.Logger
 }
 
-// Creates a new slog logger with a custom handler that formats slog messages.
+// Creates a new slog logger depending on the environment.
+// Development: Custom colorized logger.
+// Production: JSON logger.
 func NewLogger() *Logger {
-	opts := LoggerHandlerOptions{
-		SlogOpts: slog.HandlerOptions{
-			Level: LevelTrace,
-		},
-	}
+	var logger *Logger
 
-	handler := NewLoggerHandler(os.Stderr, opts)
-	logger := &Logger{*slog.New(handler)}
+	env := os.Getenv("ENV")
+	if env == "development" {
+		opts := LoggerHandlerOptions{
+			SlogOpts: slog.HandlerOptions{
+				Level: LevelTrace,
+			},
+		}
+
+		handler := NewLoggerHandler(os.Stderr, opts)
+		logger = &Logger{*slog.New(handler)}
+	} else {
+		opts := slog.HandlerOptions{
+			Level: slog.LevelInfo,
+			ReplaceAttr: func(groups []string, attr slog.Attr) slog.Attr {
+				if attr.Key == slog.LevelKey {
+					level := attr.Value.Any().(slog.Level)
+					levelLabel, exists := Levels[level]
+					if !exists {
+						panic(fmt.Sprintf("Unknown slog level: %v", level))
+					}
+
+					attr.Value = slog.StringValue(levelLabel.name)
+				}
+
+				return attr
+			},
+		}
+
+		logger = &Logger{*slog.New(slog.NewJSONHandler(os.Stderr, &opts))}
+	}
 
 	return logger
 }
