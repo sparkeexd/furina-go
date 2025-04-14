@@ -2,6 +2,7 @@ package hoyolab
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 
 	"github.com/sparkeexd/mimo/internal/domain/logger"
@@ -41,7 +42,7 @@ const (
 
 // Repository for handling daily reward claim.
 type DailyRepository struct {
-	logger *logger.Logger
+	Logger *logger.Logger
 }
 
 // Daily reward endpoints are shared across different games with only minor differences to the URL.
@@ -61,7 +62,7 @@ type DailyClaim struct {
 
 // Create a new daily repository.
 func NewDailyRepository(logger *logger.Logger) DailyRepository {
-	return DailyRepository{logger: logger}
+	return DailyRepository{Logger: logger}
 }
 
 // Create a new daily reward context.
@@ -81,6 +82,7 @@ func (daily *DailyRepository) Claim(cookie network.Cookie, context DailyRewardCo
 
 	handler := network.NewHTTPHandler()
 	endpoint := fmt.Sprintf("%s/event/%s/%s?act_id=%s", context.BaseURL, context.EventID, DailyRewardSignParam, context.ActID)
+	daily.Logger.Info("Claiming daily reward", slog.String("endpoint", endpoint))
 
 	request := network.NewRequest(endpoint, http.MethodPost).
 		AddCookie(cookie).

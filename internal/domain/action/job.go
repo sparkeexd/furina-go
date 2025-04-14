@@ -9,6 +9,8 @@ import (
 type CronJob struct {
 	Definition gocron.JobDefinition
 	Task       gocron.Task
+	Option     gocron.JobOption
+	CronTab    string
 }
 
 // Service's cron jobs to be registered.
@@ -17,6 +19,6 @@ type JobService interface {
 }
 
 // Create a new cron job model.
-func NewCronJob(definition gocron.JobDefinition, task gocron.Task) CronJob {
-	return CronJob{definition, task}
+func NewCronJob(definition gocron.JobDefinition, task gocron.Task, option gocron.JobOption, cronTab string) CronJob {
+	return CronJob{definition, task, option, cronTab}
 }

@@ -39,11 +39,11 @@ func (handler *LoggerHandler) Handle(ctx context.Context, record slog.Record) er
 	})
 
 	timeStr := handler.colorize(record.Time.Format("2006-01-02 15:04:05"), colorDarkGray)
-	level := handler.colorize(Levels[record.Level].name, Levels[record.Level].levelColor)
+	level := handler.colorize(fmt.Sprintf("[%s]", Levels[record.Level].name), Levels[record.Level].levelColor)
 	message := handler.colorize(record.Message, colorWhite)
 	fieldsStr := handler.formatFields(record.Level, fields)
 
-	handler.logger.Printf("%s | %s | %s %s", timeStr, level, message, fieldsStr)
+	handler.logger.Printf("%s %s %s %s", timeStr, level, message, fieldsStr)
 	return nil
 }
 
@@ -53,10 +53,27 @@ func (handler *LoggerHandler) colorize(value any, color int) string {
 }
 
 // Formats the fields map into a "key=value" string.
+// Recursively formats slog.Group() values.
 func (handler *LoggerHandler) formatFields(level slog.Level, fields map[string]any) string {
-	var result string
+	var result strings.Builder
+
 	for key, value := range fields {
-		result += fmt.Sprintf("%s=%v ", handler.colorize(key, Levels[level].keyColor), handler.colorize(value, Levels[level].valueColor))
+		coloredKey := handler.colorize(key, Levels[level].keyColor)
+
+		// Check if the value is a group.
+		if group, ok := value.([]slog.Attr); ok {
+			fields := make(map[string]any, len(group))
+			for _, attr := range group {
+				fields[attr.Key] = attr.Value.Any()
+			}
+
+			nestedFields := handler.formatFields(level, fields)
+			result.WriteString(fmt.Sprintf("%s={%s} ", coloredKey, nestedFields))
+		} else {
+			coloredValue := handler.colorize(fmt.Sprintf("%v", value), Levels[level].valueColor)
+			result.WriteString(fmt.Sprintf("%s=%s ", coloredKey, coloredValue))
+		}
 	}
-	return strings.TrimSpace(result)
+
+	return strings.TrimSpace(result.String())
 }

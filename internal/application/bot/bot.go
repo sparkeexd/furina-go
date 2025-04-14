@@ -10,6 +10,7 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sparkeexd/mimo/internal/application/service"
+	"github.com/sparkeexd/mimo/internal/application/util"
 	"github.com/sparkeexd/mimo/internal/domain/action"
 	"github.com/sparkeexd/mimo/internal/domain/logger"
 	"github.com/sparkeexd/mimo/internal/infrastructure/hoyolab"
@@ -106,6 +107,20 @@ func (bot *Bot) registerCommands() {
 		bot.Session.AddHandler(
 			func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
 				if command, exists := commands[interaction.ApplicationCommandData().Name]; exists {
+					discordUser := util.GetDiscordUser(interaction)
+					bot.Logger.Info(
+						"Command invoked",
+						slog.String("command", command.Command.Name),
+						slog.Group("user",
+							slog.String("id", discordUser.ID),
+							slog.String("name", discordUser.Username),
+						),
+						slog.Group("guild",
+							slog.String("id", interaction.GuildID),
+							slog.String("name", interaction.ChannelID),
+						),
+					)
+
 					bot.InteractionCreate(command.Handler)(session, interaction)
 				}
 			},
@@ -123,10 +138,20 @@ func (bot *Bot) registerCommands() {
 // Register the cron jobs.
 func (bot *Bot) registerJobs() {
 	for _, service := range bot.JobServices {
-		jobs := service.Jobs(bot.Session)
+		cronJobs := service.Jobs(bot.Session)
 
-		for _, job := range jobs {
-			bot.Scheduler.NewJob(job.Definition, job.Task)
+		for _, cronJob := range cronJobs {
+			job, err := bot.Scheduler.NewJob(cronJob.Definition, cronJob.Task, cronJob.Option)
+			if err != nil {
+				bot.Logger.Error("Failed to register cron job", slog.String("error", err.Error()))
+			}
+
+			bot.Logger.Info(
+				"Registered cron job",
+				slog.String("name", job.Name()),
+				slog.String("crontab", cronJob.CronTab),
+			)
+
 		}
 	}
 }

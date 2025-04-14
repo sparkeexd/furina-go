@@ -22,7 +22,7 @@ type DailyService struct {
 	DailyRepository       hoyolab.DailyRepository
 	GameRepository        postgres.GameRepository
 	HoyolabUserRepository postgres.HoyolabUserRepository
-	logger                *logger.Logger
+	Logger                *logger.Logger
 }
 
 // Create a new daily service.
@@ -36,7 +36,7 @@ func NewDailyService(
 		DailyRepository:       dailyRepository,
 		HoyolabUserRepository: hoyolabUserRepository,
 		GameRepository:        gameRepository,
-		logger:                logger,
+		Logger:                logger,
 	}
 }
 
@@ -57,18 +57,21 @@ func (service *DailyService) Commands() map[string]action.Command {
 func (service *DailyService) Jobs(session *discordgo.Session) []action.CronJob {
 	regions, err := service.GameRepository.GetRegions()
 	if err != nil {
-		service.logger.Fatal("Failed to get game regions", slog.String("error", err.Error()))
+		service.Logger.Fatal("Failed to get game regions", slog.String("error", err.Error()))
 	}
 
-	var cronJobs []action.CronJob
+	jobName := "AutoDailyClaim"
+	cronJobs := []action.CronJob{}
 	for _, region := range regions {
 		regionID := region.ID
 		time := region.ResetTime
-		cronTime := fmt.Sprintf("%d %d * * *", time.Minute(), time.Hour())
+		cronTab := fmt.Sprintf("%d %d * * *", time.Minute(), time.Hour())
 
 		cronJob := action.NewCronJob(
-			gocron.CronJob(cronTime, false),
-			gocron.NewTask(service.AutoClaimTask, session, regionID),
+			gocron.CronJob(cronTab, true),
+			gocron.NewTask(service.AutoDailyClaimTask, session, regionID),
+			gocron.WithName(fmt.Sprintf("%s%s", jobName, region.Name)),
+			cronTab,
 		)
 
 		cronJobs = append(cronJobs, cronJob)
@@ -90,7 +93,7 @@ func (service *DailyService) DailyClaimCommandHandler(session *discordgo.Session
 	if err != nil {
 		content := "You are not registered yet, please register first."
 		session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{Content: &content})
-		service.logger.Error(content, slog.String("error", err.Error()))
+		service.Logger.Error(content, slog.String("error", err.Error()))
 		return
 	}
 
@@ -101,7 +104,7 @@ func (service *DailyService) DailyClaimCommandHandler(session *discordgo.Session
 	if err != nil {
 		content := "An internal error occurred while trying to check in. Please try again later."
 		session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{Content: &content})
-		service.logger.Error(content, slog.String("error", err.Error()))
+		service.Logger.Error(content, slog.String("error", err.Error()))
 		return
 	}
 
@@ -116,16 +119,17 @@ func (service *DailyService) DailyClaimCommandHandler(session *discordgo.Session
 }
 
 // Task that automatically handles Genshin Impact daily check-in for all registered users.
-func (service *DailyService) AutoClaimTask(session *discordgo.Session, regionID int) {
-	offsetDiscordID := -1
-	batchSize := 50
+func (service *DailyService) AutoDailyClaimTask(session *discordgo.Session, regionID int) {
+	service.Logger.Info("Running auto claim task", slog.Int("regionID", regionID))
 
 	failedUsers := []postgres.HoyolabUser{}
+	offsetDiscordID := -1
+	batchSize := 50
 
 	for {
 		users, err := service.HoyolabUserRepository.ListByRegionID(regionID, offsetDiscordID, batchSize)
 		if err != nil {
-			service.logger.Error("Failed to list users", slog.String("error", err.Error()))
+			service.Logger.Error("Failed to list users", slog.String("error", err.Error()))
 			return
 		}
 
@@ -147,6 +151,7 @@ func (service *DailyService) AutoClaimTask(session *discordgo.Session, regionID 
 			break
 		}
 
+		service.Logger.Info("Retrying auto claim task for failed users", slog.Int("regionID", regionID))
 		failedUsers = service.autoClaim(session, failedUsers)
 		retryCount++
 	}
@@ -157,7 +162,7 @@ func (service *DailyService) AutoClaimTask(session *discordgo.Session, regionID 
 			discordIDs[i] = user.DiscordID
 		}
 
-		service.logger.Error("Max retries reached for failed users", slog.Any("error", discordIDs))
+		service.Logger.Error("Max retries reached for failed users", slog.Any("error", discordIDs))
 		content := fmt.Sprintf(
 			"%s\n%s",
 			"We have encountered an error while trying to check in for you.",
@@ -181,6 +186,8 @@ func (service *DailyService) autoClaim(session *discordgo.Session, users []postg
 			time.Sleep(time.Second * 10)
 		}
 
+		service.Logger.Info("Auto claiming daily reward", slog.Int("discordID", user.DiscordID))
+
 		cookie := network.NewCookie(user.LtokenV2, user.LtmidV2, strconv.Itoa(user.ID))
 		context := hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame)
 
@@ -190,7 +197,7 @@ func (service *DailyService) autoClaim(session *discordgo.Session, users []postg
 		if res.Retcode != 0 {
 			content = res.Message
 		} else if err != nil {
-			service.logger.Warn(
+			service.Logger.Warn(
 				"Failed to auto claim daily reward",
 				slog.Int("discordID", user.DiscordID),
 				slog.String("error", err.Error()),
@@ -208,7 +215,7 @@ func (service *DailyService) autoClaim(session *discordgo.Session, users []postg
 func (service *DailyService) sendChannelMessage(session *discordgo.Session, discordID int, content string) {
 	channel, err := session.UserChannelCreate(strconv.Itoa(discordID))
 	if err != nil {
-		service.logger.Error(
+		service.Logger.Error(
 			"Failed to send message to user channel",
 			slog.Int("discordID", discordID),
 			slog.String("error", err.Error()),

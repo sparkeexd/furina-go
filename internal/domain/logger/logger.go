@@ -19,7 +19,7 @@ func NewLogger() *Logger {
 		},
 	}
 
-	handler := NewLoggerHandler(os.Stdout, opts)
+	handler := NewLoggerHandler(os.Stderr, opts)
 	logger := &Logger{*slog.New(handler)}
 
 	return logger
