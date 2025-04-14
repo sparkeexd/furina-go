@@ -148,8 +148,10 @@ func (bot *Bot) registerJobs() {
 
 			bot.Logger.Info(
 				"Registered cron job",
-				slog.String("name", job.Name()),
-				slog.String("crontab", cronJob.CronTab),
+				slog.Group("job",
+					slog.String("name", job.Name()),
+					slog.String("crontab", cronJob.CronTab),
+				),
 			)
 
 		}
