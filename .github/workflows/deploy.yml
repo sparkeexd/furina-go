@@ -53,7 +53,8 @@ jobs:
         while true; do
           status=$(gcloud compute ssh ${{ secrets.GCE_INSTANCE }} \
             --zone ${{ secrets.GCE_INSTANCE_ZONE }} \
-            --command "docker container ls --filter "status=running" --quiet")
+            --command "docker container ls --filter "status=running" --quiet" \
+            --quiet)
           
           if [ -n "$status" ]; then
             echo "Container is running."
