@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - master
-      - deploy_cloud
   workflow_dispatch:
 
 jobs:
@@ -50,6 +49,7 @@ jobs:
           --container-env BOT_TOKEN=${{ secrets.BOT_TOKEN }} \
           --container-env DATABASE_URL=${{ secrets.DATABASE_URL }}
         
+        echo "Waiting for the container to start..."
         while true; do
           status=$(gcloud compute ssh ${{ secrets.GCE_INSTANCE }} \
             --zone ${{ secrets.GCE_INSTANCE_ZONE }} \
