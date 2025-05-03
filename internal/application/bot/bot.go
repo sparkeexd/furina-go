@@ -10,24 +10,25 @@ import (
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/sparkeexd/mimo/internal/application/service"
-	"github.com/sparkeexd/mimo/internal/application/util"
-	"github.com/sparkeexd/mimo/internal/domain/action"
-	"github.com/sparkeexd/mimo/internal/domain/logger"
+	"github.com/sparkeexd/mimo/internal/domain/abstract"
+	"github.com/sparkeexd/mimo/internal/infrastructure/discord"
 	"github.com/sparkeexd/mimo/internal/infrastructure/hoyolab"
 	"github.com/sparkeexd/mimo/internal/infrastructure/postgres"
+	"github.com/sparkeexd/mimo/pkg/logger"
 )
 
 // Discord bot.
 type Bot struct {
-	Session         *discordgo.Session
-	CommandServices []action.CommandService
-	JobServices     []action.JobService
-	Scheduler       gocron.Scheduler
-	Logger          *logger.Logger
+	session         *discordgo.Session
+	commandServices []abstract.CommandService
+	jobServices     []abstract.JobService
+	scheduler       gocron.Scheduler
+	logger          *logger.Logger
 }
 
 // Create a new Discord bot.
 func NewBot() Bot {
+	context := context.Background()
 	logger := logger.NewLogger()
 
 	token := os.Getenv("BOT_TOKEN")
@@ -36,7 +37,7 @@ func NewBot() Bot {
 		logger.Fatal("Invalid bot parameters", slog.String("error", err.Error()))
 	}
 
-	db, err := pgxpool.New(context.Background(), os.Getenv("DATABASE_URL"))
+	db, err := pgxpool.New(context, os.Getenv("DATABASE_URL"))
 	if err != nil {
 		logger.Fatal("Unable to connect to database", slog.String("error", err.Error()))
 	}
@@ -46,53 +47,69 @@ func NewBot() Bot {
 		logger.Fatal("Failed to initialize scheduler", slog.String("error", err.Error()))
 	}
 
-	gameRepository := postgres.NewGameRepository(db)
-	dailyRepository := hoyolab.NewDailyRepository(logger)
-	userRepository := postgres.NewHoyolabUserRepository(db)
-
-	pingService := service.NewPingService()
-	dailyService := service.NewDailyService(dailyRepository, userRepository, gameRepository, logger)
-
-	commandServices := []action.CommandService{&pingService, &dailyService}
-	jobServices := []action.JobService{&dailyService}
+	commandServices, jobServices := initializeServices(db, logger)
 
 	bot := Bot{
-		Session:         session,
-		CommandServices: commandServices,
-		JobServices:     jobServices,
-		Scheduler:       scheduler,
-		Logger:          logger,
+		session:         session,
+		commandServices: commandServices,
+		jobServices:     jobServices,
+		scheduler:       scheduler,
+		logger:          logger,
 	}
 
 	return bot
 }
 
+// Initialize services used by the Discord bot.
+func initializeServices(db *pgxpool.Pool, logger *logger.Logger) ([]abstract.CommandService, []abstract.JobService) {
+	dailyRepository := hoyolab.NewDailyRepository(logger)
+	hoyolabUserRepository := postgres.NewHoyolabUserRepository(db)
+	discordUserRepository := postgres.NewDiscordUserRepository(db)
+	gameUserRepository := postgres.NewGameUserRepository(db)
+	interactionRepository := discord.NewInteractionRepository(logger)
+
+	pingService := service.NewPingService(interactionRepository)
+	dailyService := service.NewDailyService(
+		dailyRepository,
+		discordUserRepository,
+		hoyolabUserRepository,
+		gameUserRepository,
+		interactionRepository,
+		logger,
+	)
+
+	commandServices := []abstract.CommandService{&pingService, &dailyService}
+	jobServices := []abstract.JobService{&dailyService}
+
+	return commandServices, jobServices
+}
+
 // Start Discord bot.
 func (bot *Bot) Start() {
-	bot.Session.AddHandler(bot.Ready)
+	bot.session.AddHandler(bot.logReady)
 
-	bot.Logger.Info("Creating discord bot session...")
-	err := bot.Session.Open()
+	bot.logger.Info("Creating discord bot session...")
+	err := bot.session.Open()
 	if err != nil {
-		bot.Logger.Fatal("Cannot open the session", slog.String("error", err.Error()))
+		bot.logger.Fatal("Cannot open the session", slog.String("error", err.Error()))
 	}
 
-	bot.Logger.Info("Registering commands...")
+	bot.logger.Info("Registering commands...")
 	bot.registerCommands()
 
-	bot.Logger.Info("Registering jobs...")
+	bot.logger.Info("Registering jobs...")
 	bot.registerJobs()
-	bot.Scheduler.Start()
+	bot.scheduler.Start()
 
 	// Event listener to stop the bot.
-	bot.Logger.Info("Bot is now running! Press Ctrl+C to exit.")
+	bot.logger.Info("Bot is now running! Press Ctrl+C to exit.")
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt)
 	<-stop
 
-	bot.Logger.Info("Closing discord bot session...")
-	bot.Session.Close()
-	bot.Scheduler.Shutdown()
+	bot.logger.Info("Closing discord bot session...")
+	bot.session.Close()
+	bot.scheduler.Shutdown()
 }
 
 // Register the slash commands.
@@ -101,19 +118,23 @@ func (bot *Bot) Start() {
 func (bot *Bot) registerCommands() {
 	var commandsToRegister []*discordgo.ApplicationCommand
 
-	for _, service := range bot.CommandServices {
+	for _, service := range bot.commandServices {
 		commands := service.Commands()
 
-		bot.Session.AddHandler(
+		bot.session.AddHandler(
 			func(session *discordgo.Session, interaction *discordgo.InteractionCreate) {
 				if command, exists := commands[interaction.ApplicationCommandData().Name]; exists {
-					discordUser := util.GetDiscordUser(interaction)
-					bot.Logger.Info(
+					user := interaction.User
+					if user == nil {
+						user = interaction.Member.User
+					}
+
+					bot.logger.Info(
 						"Command invoked",
 						slog.String("command", command.Command.Name),
 						slog.Group("user",
-							slog.String("id", discordUser.ID),
-							slog.String("name", discordUser.Username),
+							slog.String("id", user.ID),
+							slog.String("name", user.Username),
 						),
 						slog.Group("guild",
 							slog.String("id", interaction.GuildID),
@@ -121,7 +142,7 @@ func (bot *Bot) registerCommands() {
 						),
 					)
 
-					bot.InteractionCreate(command.Handler)(session, interaction)
+					bot.filterInteraction(command.Handler, user)(session, interaction)
 				}
 			},
 		)
@@ -132,21 +153,21 @@ func (bot *Bot) registerCommands() {
 	}
 
 	// Overwrite all existing commands, which allow clearing out old commands.
-	bot.Session.ApplicationCommandBulkOverwrite(bot.Session.State.User.ID, "", commandsToRegister)
+	bot.session.ApplicationCommandBulkOverwrite(bot.session.State.User.ID, "", commandsToRegister)
 }
 
 // Register the cron jobs.
 func (bot *Bot) registerJobs() {
-	for _, service := range bot.JobServices {
-		cronJobs := service.Jobs(bot.Session)
+	for _, service := range bot.jobServices {
+		cronJobs := service.Jobs(bot.session)
 
 		for _, cronJob := range cronJobs {
-			job, err := bot.Scheduler.NewJob(cronJob.Definition, cronJob.Task, cronJob.Option)
+			job, err := bot.scheduler.NewJob(cronJob.Definition, cronJob.Task, cronJob.Option)
 			if err != nil {
-				bot.Logger.Error("Failed to register cron job", slog.String("error", err.Error()))
+				bot.logger.Error("Failed to register cron job", slog.String("error", err.Error()))
 			}
 
-			bot.Logger.Info(
+			bot.logger.Info(
 				"Registered cron job",
 				slog.Group("job",
 					slog.String("name", job.Name()),

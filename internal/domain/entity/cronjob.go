@@ -1,7 +1,6 @@
-package action
+package entity
 
 import (
-	"github.com/bwmarrin/discordgo"
 	"github.com/go-co-op/gocron/v2"
 )
 
@@ -11,11 +10,6 @@ type CronJob struct {
 	Task       gocron.Task
 	Option     gocron.JobOption
 	CronTab    string
-}
-
-// Service's cron jobs to be registered.
-type JobService interface {
-	Jobs(session *discordgo.Session) []CronJob
 }
 
 // Create a new cron job model.
