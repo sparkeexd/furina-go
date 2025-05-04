@@ -60,6 +60,7 @@ func (repository InteractionRepository) CreateEmbed() *entity.Embed {
 // Create an error embed.
 func (repository InteractionRepository) CreateErrorEmbed() *entity.Embed {
 	embed := entity.NewEmbed().
+		SetTitle("Error").
 		SetThumbnail("https://media.tenor.com/7nsbCGbleT0AAAAi/furina-genshin-impact.png").
 		SetColor(0xFC2C2C)
 

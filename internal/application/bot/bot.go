@@ -63,17 +63,15 @@ func NewBot() Bot {
 // Initialize services used by the Discord bot.
 func initializeServices(db *pgxpool.Pool, logger *logger.Logger) ([]abstract.CommandService, []abstract.JobService) {
 	dailyRepository := hoyolab.NewDailyRepository(logger)
-	hoyolabUserRepository := postgres.NewHoyolabUserRepository(db)
-	discordUserRepository := postgres.NewDiscordUserRepository(db)
-	gameUserRepository := postgres.NewGameUserRepository(db)
+	userRepository := postgres.NewUserRepository(db)
+	accountRepository := postgres.NewAccountRepository(db)
 	interactionRepository := discord.NewInteractionRepository(logger)
 
 	pingService := service.NewPingService(interactionRepository)
 	dailyService := service.NewDailyService(
 		dailyRepository,
-		discordUserRepository,
-		hoyolabUserRepository,
-		gameUserRepository,
+		userRepository,
+		accountRepository,
 		interactionRepository,
 		logger,
 	)

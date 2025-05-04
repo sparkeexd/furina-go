@@ -1,6 +1,7 @@
 package service
 
 import (
+	"fmt"
 	"log/slog"
 	"strconv"
 	"time"
@@ -16,18 +17,32 @@ import (
 )
 
 // Mapping HoYoverse game to its respective daily reward context.
-var DailyClaimContext = map[int]hoyolab.DailyRewardContext{
-	1: hoyolab.NewDailyRewardContext(hoyolab.Hk4eEndpoint, hoyolab.GenshinEventID, hoyolab.GenshinActID, hoyolab.GenshinSignGame),
-	2: hoyolab.NewDailyRewardContext(hoyolab.SgPublicEndpoint, hoyolab.StarRailEventID, hoyolab.StarRailActID, hoyolab.StarRailSignGame),
-	3: hoyolab.NewDailyRewardContext(hoyolab.SgPublicEndpoint, hoyolab.ZenlessEventID, hoyolab.ZenlessActID, hoyolab.ZenlessSignGame),
+var DailyClaimContext = map[string]hoyolab.DailyRewardContext{
+	postgres.GenshinEnum: hoyolab.NewDailyRewardContext(
+		hoyolab.Hk4eEndpoint,
+		hoyolab.GenshinEventID,
+		hoyolab.GenshinActID,
+		hoyolab.GenshinSignGame,
+	),
+	postgres.StarRailEnum: hoyolab.NewDailyRewardContext(
+		hoyolab.SgPublicEndpoint,
+		hoyolab.StarRailEventID,
+		hoyolab.StarRailActID,
+		hoyolab.StarRailSignGame,
+	),
+	postgres.ZenlessEnum: hoyolab.NewDailyRewardContext(
+		hoyolab.SgPublicEndpoint,
+		hoyolab.ZenlessEventID,
+		hoyolab.ZenlessActID,
+		hoyolab.ZenlessSignGame,
+	),
 }
 
 // Service that handles daily check-in commands.
 type DailyService struct {
 	dailyRepository       hoyolab.DailyRepository
-	discordUserRepository postgres.DiscordUserRepository
-	hoyolabUserRepository postgres.HoyolabUserRepository
-	gameUserRepository    postgres.GameUserRepository
+	userRepository        postgres.UserRepository
+	accountRepository     postgres.AccountRepository
 	interactionRepository discord.InteractionRepository
 	logger                *logger.Logger
 }
@@ -35,17 +50,15 @@ type DailyService struct {
 // Create a new daily service.
 func NewDailyService(
 	dailyRepository hoyolab.DailyRepository,
-	discordUserRepository postgres.DiscordUserRepository,
-	hoyolabUserRepository postgres.HoyolabUserRepository,
-	gameRepository postgres.GameUserRepository,
+	userRepository postgres.UserRepository,
+	accountRepository postgres.AccountRepository,
 	interactionRepository discord.InteractionRepository,
 	logger *logger.Logger,
 ) DailyService {
 	return DailyService{
 		dailyRepository:       dailyRepository,
-		discordUserRepository: discordUserRepository,
-		hoyolabUserRepository: hoyolabUserRepository,
-		gameUserRepository:    gameRepository,
+		userRepository:        userRepository,
+		accountRepository:     accountRepository,
 		interactionRepository: interactionRepository,
 		logger:                logger,
 	}
@@ -68,7 +81,7 @@ func (service *DailyService) Commands() map[string]entity.Command {
 func (service *DailyService) Jobs(session *discordgo.Session) []entity.CronJob {
 	cronJobs := []entity.CronJob{}
 	jobName := "AutoDailyClaim"
-	cronTab := "0 16 * * *"
+	cronTab := "0 20 * * *"
 	cronJob := entity.NewCronJob(
 		gocron.CronJob(cronTab, false),
 		gocron.NewTask(service.autoDailyClaimTask, session),
@@ -90,30 +103,7 @@ func (service *DailyService) dailyClaimCommandHandler(session *discordgo.Session
 	user := service.interactionRepository.GetDiscordUser(interaction)
 	discordID, _ := strconv.Atoi(user.ID)
 
-	embed, err := service.dailyClaim(discordID)
-	if err != nil {
-		// Send error embed
-		return
-	}
-
-	// res, err := service.dailyRepository.Claim(cookie, context)
-	// if err != nil {
-	// 	content := "An internal error occurred while trying to check in. Please try again later."
-	// 	session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{Content: &content})
-	// 	service.logger.Error(content, slog.String("error", err.Error()))
-	// 	return
-	// }
-
-	// content := fmt.Sprintf("You have successfully checked in, %s!", user.Mention())
-	// if res.Retcode != 0 {
-	// 	content = res.Message
-	// 	service.logger.Info(
-	// 		"Failed to auto claim daily reward",
-	// 		slog.Int("discordID", discordID),
-	// 		slog.Int("retcode", res.Retcode),
-	// 		slog.String("message", res.Message),
-	// 	)
-	// }
+	embed := service.dailyClaim(discordID)
 
 	session.InteractionResponseEdit(interaction.Interaction, &discordgo.WebhookEdit{
 		Embeds: &[]*discordgo.MessageEmbed{embed.MessageEmbed},
@@ -128,99 +118,128 @@ func (service *DailyService) autoDailyClaimTask(session *discordgo.Session) {
 	batchSize := 50
 
 	for {
-		discordUsers, err := service.discordUserRepository.ListDiscordUsers(offsetDiscordID, batchSize)
+		users, err := service.userRepository.ListDiscordUsers(offsetDiscordID, batchSize)
 		if err != nil {
 			service.logger.Error("Failed to list users", slog.String("error", err.Error()))
 			return
 		}
 
 		// If no more users are found, exit the loop. This means all users have been processed.
-		if len(discordUsers) == 0 {
+		if len(users) == 0 {
 			break
 		}
 
-		for _, discordUser := range discordUsers {
+		for _, user := range users {
 			// Sleep for 10 seconds per user to mitigate rate limits.
 			time.Sleep(time.Second * 10)
-
-			embed, err := service.dailyClaim(discordUser.ID)
-			if err != nil {
-				// Send error embed
-				continue
-			}
-
-			service.sendChannelMessageEmbed(session, discordUser.ID, embed.MessageEmbed)
+			embed := service.dailyClaim(user.ID)
+			service.sendChannelMessageEmbed(session, user.ID, embed.MessageEmbed)
 		}
 
 		// Start next batch from the last Discord ID in the current batch.
-		offsetDiscordID = discordUsers[len(discordUsers)-1].ID
+		offsetDiscordID = users[len(users)-1].ID
 	}
 }
 
-// Claim daily rewards for a Discord user.
-func (service *DailyService) dailyClaim(discordID int) (*entity.Embed, error) {
-	service.logger.Info("Auto claiming daily reward", slog.Int("discordID", discordID))
+// Claim daily rewards for a user.
+func (service *DailyService) dailyClaim(discordID int) (embed *entity.Embed) {
+	service.logger.Info("Claiming daily reward", slog.Int("discordID", discordID))
 
-	hoyolabUser, err := service.hoyolabUserRepository.GetByDiscordID(discordID)
+	user, accounts, err := service.getUserAccounts(discordID)
 	if err != nil {
-		service.logger.Error(
-			"Failed to get Discord user's HoYoLAB account",
-			slog.Int("discordID", discordID),
-			slog.String("error", err.Error()),
-		)
-		return nil, err
+		description := "Your game accounts could not be fetched. Please try registering again."
+		embed = service.interactionRepository.CreateErrorEmbed().SetDescription(description)
+		return embed
 	}
 
-	gameUsers, err := service.gameUserRepository.ListByDiscordID(discordID)
-	if err != nil {
-		service.logger.Error(
-			"Failed to get Discord user's HoYoverse game accounts",
-			slog.Int("discordID", discordID),
-			slog.String("error", err.Error()),
-		)
-		return nil, err
-	}
+	cookie := network.NewCookie(user.LtokenV2, user.LtmidV2, user.LtuidV2)
+	fields := []*discordgo.MessageEmbedField{}
 
-	cookie := network.NewCookie(hoyolabUser.LtokenV2, hoyolabUser.LtmidV2, strconv.Itoa(hoyolabUser.ID))
-	fields := []*discordgo.MessageEmbedField{{Name: "", Value: ""}}
-
-	for _, gameUser := range gameUsers {
-		context := DailyClaimContext[gameUser.GameID]
-		res, err := service.dailyRepository.Claim(cookie, context)
-
-		content := "Successfully checked in."
-		if res.Retcode != 0 {
-			content = res.Message
-			service.logger.Info(
-				"Failed to auto claim daily reward",
-				slog.Int("discordID", discordID),
-				slog.Int("retcode", res.Retcode),
-				slog.String("message", res.Message),
+	for _, account := range accounts {
+		context, exists := DailyClaimContext[account.Game]
+		if !exists {
+			service.logger.Error(
+				"Failed to fetch daily claim context: Invalid Game ID",
+				slog.String("gameID", account.Game),
 			)
-		} else if err != nil {
-			content = err.Error()
-			service.logger.Warn(
-				"Failed to auto claim daily reward",
-				slog.Int("discordID", discordID),
-				slog.String("error", err.Error()),
-			)
+			return
 		}
 
-		game, _ := service.gameUserRepository.GetGameByID(gameUser.GameID)
-		fields = append(
-			fields,
-			&discordgo.MessageEmbedField{Name: game.Name, Value: content},
-			&discordgo.MessageEmbedField{Name: "", Value: ""}, // To add small newline between fields
+		res, err := service.dailyRepository.Claim(cookie, context)
+
+		gameTitle := service.accountRepository.GetGameTitle(account.Game)
+		content := service.getEmbedContent(res, err, discordID)
+		fields = append(fields, &discordgo.MessageEmbedField{Name: gameTitle, Value: content})
+	}
+
+	value := ""
+	for _, field := range fields {
+		value = fmt.Sprintf("%s\n**%s**: %s", value, field.Name, field.Value)
+	}
+
+	embed = service.interactionRepository.CreateEmbed().
+		SetTitle("Daily Check-in").
+		SetDescription(fmt.Sprintf("Claim your HoYoLAB daily check-in rewards!\n%s", value)).
+		SetThumbnail("https://media.tenor.com/EhXA2CCJ-QUAAAAj/furina.gif")
+
+	return embed
+}
+
+// Get user and their HoYoverse game accounts.
+func (service *DailyService) getUserAccounts(discordID int) (user entity.User, accounts []entity.Account, err error) {
+	user, err = service.userRepository.GetByDiscordID(discordID)
+	if err != nil {
+		service.logger.Error(
+			"Failed to get user",
+			slog.Int("discordID", discordID),
+			slog.String("error", err.Error()),
+		)
+
+		return user, accounts, err
+	}
+
+	accounts, err = service.accountRepository.ListByDiscordID(discordID)
+	if err != nil {
+		service.logger.Error(
+			"Failed to get user's HoYoverse game accounts",
+			slog.Int("discordID", discordID),
+			slog.String("error", err.Error()),
+		)
+
+		return user, accounts, err
+	}
+
+	return user, accounts, err
+}
+
+// Get embed content.
+func (service *DailyService) getEmbedContent(res entity.DailyClaim, err error, discordID int) (content string) {
+	content = ""
+	if err != nil {
+		content = err.Error()
+		service.logger.Warn(
+			"Failed to auto claim daily reward",
+			slog.Int("discordID", discordID),
+			slog.String("error", err.Error()),
+		)
+	} else {
+		switch res.Retcode {
+		case hoyolab.OK, hoyolab.DailyAlreadyClaimed:
+			content = "Reward claimed!"
+		case hoyolab.InvalidCookie:
+			content = "Cookie is invalid/has expired."
+		default:
+			content = res.Message
+		}
+
+		service.logger.Info(
+			res.Message,
+			slog.Int("discordID", discordID),
+			slog.Int("retcode", res.Retcode),
 		)
 	}
 
-	embed := service.interactionRepository.CreateEmbed().
-		SetTitle("Daily Check-in").
-		SetDescription("Claim your HoYoLAB daily check-in rewards!").
-		SetThumbnail("https://media.tenor.com/EhXA2CCJ-QUAAAAj/furina.gif").
-		AddFields(fields)
-
-	return embed, nil
+	return content
 }
 
 // Send message to user channel.
