@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/sparkeexd/mimo/internal/application/bot"
+	"github.com/sparkeexd/furina/internal/application/bot"
 )
 
 func main() {

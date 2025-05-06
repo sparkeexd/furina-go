@@ -9,12 +9,12 @@ import (
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-co-op/gocron/v2"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/sparkeexd/mimo/internal/application/service"
-	"github.com/sparkeexd/mimo/internal/domain/abstract"
-	"github.com/sparkeexd/mimo/internal/infrastructure/discord"
-	"github.com/sparkeexd/mimo/internal/infrastructure/hoyolab"
-	"github.com/sparkeexd/mimo/internal/infrastructure/postgres"
-	"github.com/sparkeexd/mimo/pkg/logger"
+	"github.com/sparkeexd/furina/internal/application/service"
+	"github.com/sparkeexd/furina/internal/domain/abstract"
+	"github.com/sparkeexd/furina/internal/infrastructure/discord"
+	"github.com/sparkeexd/furina/internal/infrastructure/hoyolab"
+	"github.com/sparkeexd/furina/internal/infrastructure/postgres"
+	"github.com/sparkeexd/furina/pkg/logger"
 )
 
 // Discord bot.

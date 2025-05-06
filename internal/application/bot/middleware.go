@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/sparkeexd/mimo/internal/domain/entity"
+	"github.com/sparkeexd/furina/internal/domain/entity"
 )
 
 // Log when the bot is ready to start receiving commands.

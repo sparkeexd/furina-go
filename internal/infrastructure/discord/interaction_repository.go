@@ -6,8 +6,8 @@ import (
 	"time"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/sparkeexd/mimo/internal/domain/entity"
-	"github.com/sparkeexd/mimo/pkg/logger"
+	"github.com/sparkeexd/furina/internal/domain/entity"
+	"github.com/sparkeexd/furina/pkg/logger"
 )
 
 // Repository for handling Discord interactions.

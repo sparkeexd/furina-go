@@ -5,9 +5,9 @@ import (
 	"log/slog"
 	"net/http"
 
-	"github.com/sparkeexd/mimo/internal/domain/entity"
-	"github.com/sparkeexd/mimo/pkg/logger"
-	"github.com/sparkeexd/mimo/pkg/network"
+	"github.com/sparkeexd/furina/internal/domain/entity"
+	"github.com/sparkeexd/furina/pkg/logger"
+	"github.com/sparkeexd/furina/pkg/network"
 )
 
 const (

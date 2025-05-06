@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"github.com/bwmarrin/discordgo"
-	"github.com/sparkeexd/mimo/internal/domain/entity"
-	"github.com/sparkeexd/mimo/internal/infrastructure/discord"
+	"github.com/sparkeexd/furina/internal/domain/entity"
+	"github.com/sparkeexd/furina/internal/infrastructure/discord"
 )
 
 // Service that handles a basic ping command to the bot.

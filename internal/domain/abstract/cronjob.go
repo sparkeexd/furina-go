@@ -2,7 +2,7 @@ package abstract
 
 import (
 	"github.com/bwmarrin/discordgo"
-	"github.com/sparkeexd/mimo/internal/domain/entity"
+	"github.com/sparkeexd/furina/internal/domain/entity"
 )
 
 // Service's cron jobs to be registered.

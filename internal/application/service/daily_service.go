@@ -8,12 +8,12 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/go-co-op/gocron/v2"
-	"github.com/sparkeexd/mimo/internal/domain/entity"
-	"github.com/sparkeexd/mimo/internal/infrastructure/discord"
-	"github.com/sparkeexd/mimo/internal/infrastructure/hoyolab"
-	"github.com/sparkeexd/mimo/internal/infrastructure/postgres"
-	"github.com/sparkeexd/mimo/pkg/logger"
-	"github.com/sparkeexd/mimo/pkg/network"
+	"github.com/sparkeexd/furina/internal/domain/entity"
+	"github.com/sparkeexd/furina/internal/infrastructure/discord"
+	"github.com/sparkeexd/furina/internal/infrastructure/hoyolab"
+	"github.com/sparkeexd/furina/internal/infrastructure/postgres"
+	"github.com/sparkeexd/furina/pkg/logger"
+	"github.com/sparkeexd/furina/pkg/network"
 )
 
 // Mapping HoYoverse game to its respective daily reward context.

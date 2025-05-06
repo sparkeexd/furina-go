@@ -1,6 +1,6 @@
 package abstract
 
-import "github.com/sparkeexd/mimo/internal/domain/entity"
+import "github.com/sparkeexd/furina/internal/domain/entity"
 
 // Service's slash commands to be registered.
 type CommandService interface {

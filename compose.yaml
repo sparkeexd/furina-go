@@ -5,13 +5,13 @@ services:
       context: .
       target: development
       dockerfile: Dockerfile
-    image: mimo-bot
+    image: furina-bot
     restart: unless-stopped
     env_file: .env.development
     depends_on:
       - database
     volumes:
-      - .:/workspaces/mimo:cached
+      - .:/workspaces/furina:cached
 
   database:
     container_name: database
