@@ -134,10 +134,8 @@ func (bot *Bot) registerCommands() {
 							slog.String("id", user.ID),
 							slog.String("name", user.Username),
 						),
-						slog.Group("guild",
-							slog.String("id", interaction.GuildID),
-							slog.String("name", interaction.ChannelID),
-						),
+						slog.String("guildID", interaction.GuildID),
+						slog.String("channelID", interaction.ChannelID),
 					)
 
 					bot.filterInteraction(command.Handler, user)(session, interaction)
